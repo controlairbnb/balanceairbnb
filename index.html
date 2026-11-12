@@ -1,0 +1,1433 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Balance Caridi &amp; Blue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: barra fija con mes, usuario y pestañas; hojas contables con el formato del Excel (monto a la izquierda, concepto a la derecha). Colores de edificio heredados del Excel: Caridi naranja, Blue azul. */
+:root{
+  --bg:#F3F5F6; --surface:#FFFFFF; --surface-2:#ECF0F2; --ink:#15222C; --muted:#5A6A76;
+  --line:#D5DDE2; --line-strong:#B4C1CA;
+  --accent:#1D4F7A; --accent-ink:#FFFFFF; --accent-soft:#E1EBF4;
+  --pos:#1B7A4B; --neg:#BF3A30; --warn-soft:#FCF1DC; --warn-line:#EBCB8B;
+  --on-ed:#FFFFFF;
+  --naranja:#C35F0F; --naranja-soft:#FBEADB;
+  --azul:#1767A6; --azul-soft:#DFEDF9;
+  --verde:#26794C; --verde-soft:#DEF1E5;
+  --morado:#6E46B4; --morado-soft:#ECE5F8;
+  --rosa:#B03A6E; --rosa-soft:#F8E2EC;
+  --gris:#5F6E7A; --gris-soft:#E6EBEE;
+  --font-head:"Space Grotesk","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-body:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+  --radius:10px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0E1418; --surface:#162027; --surface-2:#1D2932; --ink:#E4ECF0; --muted:#94A4AF;
+    --line:#29363F; --line-strong:#3E4E59;
+    --accent:#86B9E6; --accent-ink:#0E1418; --accent-soft:#1A2D3D;
+    --pos:#52C68E; --neg:#F27A6E; --warn-soft:#30261A; --warn-line:#5C4724;
+    --on-ed:#0E1418;
+    --naranja:#F2984A; --naranja-soft:#36261A;
+    --azul:#64B4EE; --azul-soft:#152E40;
+    --verde:#62C994; --verde-soft:#173224;
+    --morado:#B596F2; --morado-soft:#2A2140;
+    --rosa:#EE8AB6; --rosa-soft:#3A1E2C;
+    --gris:#A3B0BA; --gris-soft:#25313A;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg)}
+body{color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+h1,h2,h3{font-family:var(--font-head);text-wrap:balance;margin:0}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num,.v{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.neg{color:var(--neg)}
+.pos{color:var(--pos)}
+
+.ed-naranja{--ed:var(--naranja);--ed-soft:var(--naranja-soft)}
+.ed-azul{--ed:var(--azul);--ed-soft:var(--azul-soft)}
+.ed-verde{--ed:var(--verde);--ed-soft:var(--verde-soft)}
+.ed-morado{--ed:var(--morado);--ed-soft:var(--morado-soft)}
+.ed-rosa{--ed:var(--rosa);--ed-soft:var(--rosa-soft)}
+.ed-gris{--ed:var(--gris);--ed-soft:var(--gris-soft)}
+.ed-accent{--ed:var(--accent);--ed-soft:var(--accent-soft)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ed,var(--gris));flex:none}
+
+/* Pantallas de acceso */
+.auth{min-height:100vh;display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px))}
+.auth-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:28px 24px;display:grid;gap:14px}
+.auth-card h1{font-size:1.4rem;letter-spacing:-.01em}
+.auth-card .sub{margin:-8px 0 4px;color:var(--muted);font-size:.9rem}
+.auth-band{display:flex;gap:6px;margin-bottom:2px}
+.auth-band span{height:6px;flex:1;border-radius:3px;background:var(--ed)}
+.linkish{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-align:left}
+.demo-note{margin:0;font-size:.82rem;padding:10px 12px;border-radius:8px;background:var(--warn-soft);border:1px solid var(--warn-line)}
+
+/* Barra superior */
+.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 20px;padding-block:12px 6px}
+.brand{min-width:0;margin-right:auto}
+.brand h1{font-size:1.15rem;letter-spacing:-.01em;line-height:1.2}
+.brand p{margin:0;font-size:.78rem;color:var(--muted)}
+.month{display:flex;align-items:center;gap:4px}
+.month select{appearance:none;-webkit-appearance:none;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-weight:600;font-family:var(--font-head);min-width:150px;text-align:center;cursor:pointer}
+.icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;display:grid;place-items:center;font-size:1.1rem;line-height:1}
+.icon-btn:hover{background:var(--surface-2)}
+.icon-btn:disabled{opacity:.35;cursor:default}
+.who{display:flex;align-items:center;gap:8px;font-size:.84rem}
+.who b{font-weight:600}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{padding:9px 12px 10px;color:var(--muted);text-decoration:none;font-weight:600;font-size:.88rem;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-color:var(--accent)}
+
+main{padding-block:20px 56px}
+.view{display:grid;gap:20px}
+.status{margin:0 0 16px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);border:1px solid var(--warn-line);font-size:.88rem}
+.status:empty{display:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.card h2{font-size:1.05rem;margin-bottom:12px}
+.card-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px;margin-bottom:12px}
+.card-head h2{margin:0}
+.card-head p{margin:0;color:var(--muted);font-size:.86rem}
+.notice{margin:0;padding:10px 14px;border-radius:8px;background:var(--warn-soft);border:1px solid var(--warn-line);font-size:.88rem}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+
+/* Resumen estilo informe de ingresos */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:20px;align-items:center}
+.eyebrow{margin:0;font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.big{margin:4px 0 2px;font-family:var(--font-head);font-size:clamp(2rem,5vw,2.8rem);font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.hero .sub{margin:0;color:var(--muted);font-size:.88rem}
+.breakdown{margin:0;display:grid;border-left:1px solid var(--line);padding-left:20px}
+.breakdown div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.breakdown dt{color:var(--muted);font-size:.9rem}
+.breakdown dd{margin:0;font-variant-numeric:tabular-nums;font-weight:600}
+.breakdown .tot{border-bottom:0;border-top:2px solid var(--line-strong);margin-top:2px;padding-top:8px}
+.breakdown .tot dt{color:var(--ink);font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.stat{background:var(--surface);padding:14px 16px}
+.stat b{display:block;font-family:var(--font-head);font-size:1.35rem;font-variant-numeric:tabular-nums;line-height:1.2}
+.stat span{font-size:.8rem;color:var(--muted)}
+.cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px;align-items:start}
+.stack{display:grid;gap:20px;min-width:0}
+
+/* Hoja contable (formato del Excel) */
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;--ed:var(--accent);--ed-soft:var(--accent-soft);break-inside:avoid}
+.sheet-head{background:var(--ed);color:var(--on-ed);font-size:.92rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:9px 16px;text-align:center}
+.anuncio{margin:0;padding:6px 16px 0;font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpis{list-style:none;margin:0;padding:8px 16px 10px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8rem;color:var(--muted);border-bottom:1px solid var(--line);background:var(--ed-soft)}
+.kpis b{color:var(--ink);font-variant-numeric:tabular-nums}
+.rows{padding:12px 16px 16px;display:grid;gap:1px}
+.r{display:grid;grid-template-columns:minmax(118px,38%) minmax(0,1fr);gap:14px;align-items:center;padding:3px 0}
+.r .v{text-align:right;font-weight:500;white-space:nowrap}
+.r .l{font-size:.8rem;text-transform:uppercase;letter-spacing:.03em}
+.r .l small{display:block;text-transform:none;letter-spacing:0;color:var(--muted);font-size:.74rem;line-height:1.2}
+.r.inc .v{color:var(--pos)}
+.r.exp .v{color:var(--neg)}
+.r .v.neg-v{color:var(--neg)}
+.r .v.zero{color:var(--muted)}
+.r.total{border-top:3px double var(--line-strong);margin-top:4px;padding-top:7px}
+.r.total .v{font-size:1.15rem;font-weight:700}
+.r.total .l{font-weight:700}
+.r.gap{margin-top:14px}
+.r.bal{margin-top:14px;border-top:3px double var(--line-strong);border-bottom:3px double var(--line-strong);padding-block:9px}
+.r.bal .v{font-family:var(--font-head);font-size:1.45rem;font-weight:700;color:var(--pos)}
+.r.bal .l{font-weight:700;font-size:.88rem}
+.r.bal.bal-neg .v{color:var(--neg)}
+.r.adm{background:var(--ed-soft);margin-inline:-8px;padding-inline:8px;border-radius:6px}
+.adm-inp{width:100%;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--neg);background:var(--surface);border:1px dashed var(--line-strong);border-radius:6px;padding:4px 8px;min-height:32px}
+.adm-inp:hover{border-style:solid}
+.adm-inp:focus{border-style:solid;border-color:var(--accent)}
+.adm-inp::placeholder{color:var(--muted);font-weight:400}
+.adm-inp.hered{color:var(--muted)}
+
+.det{border-top:1px solid var(--line)}
+.det summary{cursor:pointer;padding:10px 16px;font-size:.86rem;font-weight:600;color:var(--accent)}
+.tbl-wrap{overflow-x:auto;padding:0 16px 14px}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem;min-width:520px}
+.tbl th{text-align:left;font-weight:600;color:var(--muted);font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;padding:6px 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl .num{text-align:right;white-space:nowrap}
+.tbl tr.aj td,.tbl tr.man td{color:var(--muted)}
+.tbl tr.aj td.num{color:var(--ink)}
+
+/* Transferencia */
+.transfer table{width:100%;border-collapse:collapse}
+.transfer td{padding:9px 10px;border-bottom:1px solid var(--line)}
+.transfer tr.edrow td{background:var(--ed-soft)}
+.transfer td:first-child{font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.transfer .num{text-align:right;font-weight:700;color:var(--pos);font-variant-numeric:tabular-nums}
+.transfer .num.neg{color:var(--neg)}
+.transfer .tot td{border-bottom:0;border-top:3px double var(--line-strong)}
+.transfer .tot .num{font-family:var(--font-head);font-size:1.15rem}
+.copy-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:14px}
+.copy-msg{font-size:.82rem;color:var(--muted)}
+.copy-box{width:100%;min-height:180px;margin-top:10px;font:.8rem/1.45 ui-monospace,Menlo,Consolas,monospace;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink)}
+
+/* Lista por apartamento */
+.apto-list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.apto-row{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 8px;border-radius:8px;text-decoration:none;color:inherit}
+.apto-row:hover{background:var(--surface-2)}
+.apto-row .code{font-family:var(--font-head);font-weight:700;font-size:1.05rem;text-align:center;border-radius:7px;padding:5px 0;background:var(--ed-soft);border-left:4px solid var(--ed)}
+.apto-row .mid{display:grid;gap:6px;min-width:0}
+.apto-row .nm{font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ed);border-radius:4px}
+.apto-row .nums{text-align:right;display:grid;line-height:1.3}
+.apto-row .nums b{font-variant-numeric:tabular-nums}
+.apto-row .nums small{font-size:.76rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.apto-row .nums small.neg{color:var(--neg)}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--muted);font-family:var(--font-body);font-size:12px}
+.chart .lbl{fill:var(--ink);font-weight:600}
+
+/* Vista de apartamentos */
+.ed-group{display:grid;gap:14px}
+.ed-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px;padding-bottom:8px;border-bottom:2px solid var(--ed)}
+.ed-head h2{display:flex;align-items:center;gap:8px;font-size:1.3rem}
+.ed-head h2 .dot{width:12px;height:12px}
+.ed-head p{margin:0;color:var(--muted);font-size:.88rem;font-variant-numeric:tabular-nums}
+.ed-head p b{color:var(--ink)}
+.sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,370px),1fr));gap:16px;align-items:start}
+
+/* Formularios y listas */
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.f{display:grid;gap:5px;min-width:0}
+.f span{font-size:.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.f-wide{grid-column:1/-1}
+.inp,.fields input,.fields select,.auth-card input,.list select,.list input{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;min-height:40px}
+.form-actions{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin-top:14px}
+.btn{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;min-height:40px}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:5px 10px;min-height:32px;font-size:.82rem}
+.btn.danger{color:var(--neg);border-color:var(--neg)}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.msg{margin:0;font-size:.86rem;color:var(--muted)}
+.msg:empty{display:none}
+.msg.ok{color:var(--pos)}
+.msg.err{color:var(--neg)}
+.list-wrap{overflow-x:auto}
+.list{width:100%;border-collapse:collapse;font-size:.88rem}
+.list th{text-align:left;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.list td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.list .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.list .act{text-align:right;white-space:nowrap}
+.list-min{min-width:560px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.adm-table td:nth-child(3){width:190px}
+
+/* Importar */
+.steps{margin:0 0 14px;padding-left:20px;display:grid;gap:4px;font-size:.92rem}
+.drop{position:relative;display:grid;place-items:center;text-align:center;gap:4px;padding:28px 16px;border:2px dashed var(--line-strong);border-radius:var(--radius);background:var(--surface-2);cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop input{position:absolute;width:1px;height:1px;opacity:0}
+.drop-t{font-weight:600}
+.drop-s{font-size:.82rem;color:var(--muted)}
+.preview{margin-top:16px;display:grid;gap:12px}
+.preview:empty{display:none}
+.pv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.pv-grid div{background:var(--surface);padding:10px 12px}
+.pv-grid b{display:block;font-family:var(--font-head);font-size:1.2rem;font-variant-numeric:tabular-nums}
+.pv-grid span{font-size:.78rem;color:var(--muted)}
+.empty{text-align:center;padding:48px 20px}
+.empty h2{font-size:1.3rem;margin-bottom:6px}
+.empty p{color:var(--muted);margin:0 auto 18px;max-width:52ch}
+.ed-rows{display:grid;gap:10px}
+.ed-row{display:grid;grid-template-columns:18px minmax(0,1fr) 150px auto;gap:10px;align-items:center}
+.ed-row input,.ed-row select{width:100%;background:var(--surface);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;min-height:40px}
+
+@media (max-width:860px){
+  .cols,.hero{grid-template-columns:1fr}
+  .breakdown{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:8px}
+}
+@media (max-width:560px){
+  .ed-row{grid-template-columns:18px minmax(0,1fr)}
+  .ed-row select,.ed-row .btn{grid-column:2}
+  .apto-row{grid-template-columns:44px minmax(0,1fr)}
+  .apto-row .nums{grid-column:2;text-align:left;display:flex;flex-wrap:wrap;gap:2px 10px;align-items:baseline}
+  .who span.rol{display:none}
+}
+@media (prefers-reduced-motion:no-preference){ .bar i{transition:width .4s ease} }
+
+@media print{
+  :root{
+    --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F1F3F5; --ink:#111; --muted:#555; --line:#CCC; --line-strong:#999;
+    --accent:#1D4F7A; --accent-ink:#FFF; --accent-soft:#E1EBF4; --pos:#1B7A4B; --neg:#BF3A30; --on-ed:#FFF;
+    --naranja:#C35F0F; --naranja-soft:#FBEADB; --azul:#1767A6; --azul-soft:#DFEDF9; --verde:#26794C; --verde-soft:#DEF1E5;
+    --morado:#6E46B4; --morado-soft:#ECE5F8; --rosa:#B03A6E; --rosa-soft:#F8E2EC; --gris:#5F6E7A; --gris-soft:#E6EBEE;
+    color-scheme:light;
+  }
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .top,.toolbar,.notice,.status,.det,.copy-row,#copy-fallback,.no-print{display:none!important}
+  main{padding:0}
+  .card,.sheet{border-color:#BBB}
+  .adm-inp{border:0;padding:0;background:none}
+}
+</style>
+</head>
+<body>
+
+<!-- Cargando -->
+<div id="scr-carga" class="auth"><p class="muted">Cargando…</p></div>
+
+<!-- Ingreso -->
+<div id="scr-login" class="auth" hidden>
+  <form id="login-form" class="auth-card" novalidate>
+    <div class="auth-band"><span class="ed-naranja"></span><span class="ed-azul"></span></div>
+    <h1>Balance Caridi &amp; Blue</h1>
+    <p class="sub">Apartamentos en Airbnb · Barranquilla</p>
+    <label class="f"><span>Usuario</span><input id="login-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+    <label class="f"><span>Contraseña</span><input id="login-pass" type="password" autocomplete="current-password"></label>
+    <button class="btn primary" type="submit" id="login-btn">Entrar</button>
+    <p class="msg err" id="login-msg" role="alert"></p>
+    <p class="demo-note" id="demo-note" hidden>Modo de prueba: todavía no está conectada a Firebase. Entra con cualquier usuario y contraseña; lo que hagas no se guarda al cerrar la página.</p>
+    <button class="linkish" type="button" id="ir-setup" hidden>Primera vez: crear la cuenta de administrador</button>
+  </form>
+  <form id="setup-form" class="auth-card" novalidate hidden>
+    <h1>Crear administrador</h1>
+    <p class="sub">Esta cuenta podrá importar, registrar gastos y crear los demás usuarios. Solo se puede crear una vez.</p>
+    <label class="f"><span>Nombre</span><input id="setup-nombre" type="text" autocomplete="name"></label>
+    <label class="f"><span>Usuario</span><input id="setup-user" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="ej. juanse"></label>
+    <label class="f"><span>Contraseña</span><input id="setup-pass" type="password" autocomplete="new-password" placeholder="Mínimo 6 caracteres"></label>
+    <label class="f"><span>Repite la contraseña</span><input id="setup-pass2" type="password" autocomplete="new-password"></label>
+    <button class="btn primary" type="submit" id="setup-btn">Crear y entrar</button>
+    <p class="msg err" id="setup-msg" role="alert"></p>
+    <button class="linkish" type="button" id="volver-login">Volver al ingreso</button>
+  </form>
+</div>
+
+<!-- Sin acceso -->
+<div id="scr-sin-acceso" class="auth" hidden>
+  <div class="auth-card">
+    <h1>Sin acceso</h1>
+    <p class="sub" style="margin:0" id="sa-texto">Tu usuario existe, pero no tiene acceso a la app. Pídele al administrador que lo active.</p>
+    <p class="msg err" id="sa-msg" role="alert"></p>
+    <button class="btn primary" type="button" id="sa-reintentar" hidden>Terminar de crear el administrador</button>
+    <button class="btn" type="button" data-act="salir">Salir</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="scr-app" hidden>
+  <header class="top">
+    <div class="wrap">
+      <div class="top-row">
+        <div class="brand">
+          <h1>Balance Caridi &amp; Blue</h1>
+          <p>Apartamentos en Airbnb · Barranquilla</p>
+        </div>
+        <div class="month" aria-label="Mes del reporte">
+          <button class="icon-btn" type="button" id="mes-prev" aria-label="Mes anterior">‹</button>
+          <select id="mes-sel" aria-label="Elegir mes"></select>
+          <button class="icon-btn" type="button" id="mes-next" aria-label="Mes siguiente">›</button>
+        </div>
+        <div class="who"><span><b id="who-nombre"></b> <span class="rol muted" id="who-rol"></span></span><button class="btn small" type="button" data-act="salir">Salir</button></div>
+      </div>
+      <nav class="tabs" aria-label="Secciones">
+        <a href="#resumen" data-view="resumen">Resumen</a>
+        <a href="#apartamentos" data-view="apartamentos">Apartamentos</a>
+        <a href="#gastos" data-view="gastos">Gastos y administración</a>
+        <a href="#importar" data-view="importar" data-solo-admin>Importar CSV</a>
+        <a href="#edificios" data-view="edificios" data-solo-admin>Edificios</a>
+        <a href="#usuarios" data-view="usuarios" id="tab-usuarios">Usuarios</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p class="status" id="status" role="status"></p>
+
+    <section class="view" id="v-resumen"></section>
+    <section class="view" id="v-apartamentos" hidden></section>
+
+    <section class="view" id="v-gastos" hidden>
+      <form id="g-form" class="card" novalidate>
+        <h2>Registrar gasto u otro ingreso</h2>
+        <div class="fields">
+          <label class="f"><span>Mes</span><select id="g-mes"></select></label>
+          <label class="f"><span>Apartamento</span><select id="g-apto"></select></label>
+          <label class="f"><span>Tipo</span>
+            <select id="g-cat">
+              <option value="servicios">Servicios públicos</option>
+              <option value="adecuaciones">Adecuaciones</option>
+              <option value="operacion">Operación</option>
+              <option value="otros">Otros gastos</option>
+              <option value="ingreso">Otro ingreso</option>
+            </select>
+          </label>
+          <label class="f"><span>Valor</span><input id="g-monto" type="text" inputmode="numeric" placeholder="$ 0" autocomplete="off"></label>
+          <label class="f f-wide"><span>Descripción</span><input id="g-desc" type="text" maxlength="140" placeholder="Ej. recibo de energía, aseo de salida, reparación de la nevera"></label>
+        </div>
+        <div class="form-actions">
+          <button class="btn primary" type="submit" id="g-save">Guardar</button>
+          <p id="g-msg" class="msg" aria-live="polite"></p>
+        </div>
+      </form>
+      <section class="card">
+        <div class="card-head"><h2 id="adm-title">Administración del mes</h2><p>Si no cambias el valor, se repite el del mes anterior</p></div>
+        <div id="adm-list"></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2 id="g-title">Registros del mes</h2><p id="g-total"></p></div>
+        <div id="g-list"></div>
+      </section>
+    </section>
+
+    <section class="view" id="v-importar" hidden>
+      <section class="card">
+        <h2>Importar informe de ingresos de Airbnb</h2>
+        <ol class="steps">
+          <li>En Airbnb, entra a <b>Menú › Ingresos</b>.</li>
+          <li>Abre <b>Pagados</b>, elige el rango de fechas y toca <b>Obtener informe</b>.</li>
+          <li>Descarga el archivo CSV y súbelo aquí.</li>
+        </ol>
+        <label class="drop" id="drop" for="imp-file">
+          <input type="file" id="imp-file" accept=".csv,text/csv">
+          <span class="drop-t">Arrastra el CSV aquí o toca para elegirlo</span>
+          <span class="drop-s">Lo que ya esté cargado no se duplica. Los pagos al banco se omiten.</span>
+        </label>
+        <div id="imp-preview" class="preview"></div>
+      </section>
+      <section class="card">
+        <h2>Meses cargados</h2>
+        <div id="imp-meses"></div>
+      </section>
+    </section>
+
+    <section class="view" id="v-edificios" hidden></section>
+
+    <section class="view" id="v-usuarios" hidden>
+      <section class="card" id="u-admin">
+        <div class="card-head"><h2>Usuarios</h2><p>Administrador: todo. Solo consulta: ve los reportes, no cambia nada.</p></div>
+        <div id="u-list"></div>
+      </section>
+      <form class="card" id="u-form" novalidate>
+        <h2>Crear usuario</h2>
+        <div class="fields">
+          <label class="f"><span>Nombre</span><input id="u-nombre" type="text" autocomplete="off"></label>
+          <label class="f"><span>Usuario</span><input id="u-user" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ej. maria"></label>
+          <label class="f"><span>Contraseña</span><input id="u-pass" type="text" autocomplete="off" placeholder="Mínimo 6 caracteres"></label>
+          <label class="f"><span>Permiso</span>
+            <select id="u-rol"><option value="consulta">Solo consulta</option><option value="admin">Administrador</option></select>
+          </label>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit" id="u-save">Crear usuario</button><p class="msg" id="u-msg" aria-live="polite"></p></div>
+      </form>
+      <form class="card" id="pw-form" novalidate>
+        <h2>Cambiar mi contraseña</h2>
+        <div class="fields">
+          <label class="f"><span>Contraseña actual</span><input id="pw-actual" type="password" autocomplete="current-password"></label>
+          <label class="f"><span>Nueva contraseña</span><input id="pw-nueva" type="password" autocomplete="new-password"></label>
+          <label class="f"><span>Repite la nueva</span><input id="pw-nueva2" type="password" autocomplete="new-password"></label>
+        </div>
+        <div class="form-actions"><button class="btn primary" type="submit" id="pw-save">Cambiar contraseña</button><p class="msg" id="pw-msg" aria-live="polite"></p></div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+/* =====================================================================
+   CONFIGURACIÓN DE FIREBASE · proyecto controlairbnb
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAHs9ARJMMKEP_GlPapHQzePInvXGV3jto",
+  authDomain: "controlairbnb.firebaseapp.com",
+  projectId: "controlairbnb",
+  storageBucket: "controlairbnb.firebasestorage.app",
+  messagingSenderId: "292231410579",
+  appId: "1:292231410579:web:8618bdbb438990354b6e66",
+  measurementId: "G-Q7CQN9NZE9"
+};
+/* Los usuarios entran con un nombre corto (ej. "juanse"). Por dentro, Firebase
+   lo guarda como juanse@<este dominio>. No se envían correos a esa dirección. */
+const DOMINIO_USUARIOS = "balance-apartamentos.app";
+
+(() => {
+  "use strict";
+
+  const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const CATS = [["servicios","Servicios públicos"],["administracion","Administración"],["adecuaciones","Adecuaciones"],["operacion","Operación"],["otros","Otros gastos"]];
+  const COLORES = [["naranja","Naranja"],["azul","Azul"],["verde","Verde"],["morado","Morado"],["rosa","Rosa"],["gris","Gris"]];
+  const VIEWS = ["resumen","apartamentos","gastos","importar","edificios","usuarios"];
+  const ROLES = { admin: "Administrador", consulta: "Solo consulta", inactivo: "Sin acceso" };
+
+  const S = {
+    demo: false, user: null, perfil: null, setupExiste: true,
+    movs: [], gastos: [], admin: {}, config: null, usuarios: [],
+    got: { movs: false, gastos: false, admin: false, config: false },
+    error: "", mes: null, mesElegido: false, view: "resumen",
+    pending: null, importing: false, impMsg: "", impMsgCls: "",
+    cfgDraft: null, cfgDirty: false, cfgMsg: "", cfgMsgCls: "",
+    confirmDel: null, confirmMes: null, focusApto: null, diferido: false
+  };
+  const esAdmin = () => S.perfil && S.perfil.rol === "admin";
+
+  /* ---------- utilidades ---------- */
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmtCOP = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  function money(n) { const r = Math.round(n || 0); return (r < 0 ? "−" : "") + fmtCOP.format(Math.abs(r)); }
+  function pct(x, t) { if (!(t > 0)) return "0%"; const v = Math.round((x / t) * 10000) / 100; return v.toLocaleString("es-CO", { maximumFractionDigits: 2 }) + "%"; }
+  const pctInt = x => Math.round((x || 0) * 100) + "%";
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const pad = n => String(n).padStart(2, "0");
+  function mesLabel(m) { if (!m) return ""; const [y, mm] = m.split("-"); return cap(MESES[+mm - 1]) + " " + y; }
+  function mesExcel(m) { const [y, mm] = m.split("-"); return MESES[+mm - 1].toUpperCase() + " / " + y; }
+  function mesActual() { const d = new Date(); return d.getFullYear() + "-" + pad(d.getMonth() + 1); }
+  function fechaCorta(iso) { if (!iso) return "—"; const [, m, d] = iso.split("-"); return (+d) + " " + MESES[+m - 1].slice(0, 3); }
+  const natSort = (a, b) => String(a).localeCompare(String(b), "es", { numeric: true });
+  const norm = s => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  const dUTC = iso => { const [y, m, d] = iso.split("-").map(Number); return Date.UTC(y, m - 1, d); };
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const listaY = arr => arr.length <= 1 ? arr.join("") : arr.slice(0, -1).join(", ") + " y " + arr[arr.length - 1];
+  const brutoDe = m => (m.bruto > 0 ? m.bruto : (m.monto || 0));
+  const slug = a => String(a).replace(/[^A-Za-z0-9_-]/g, "_");
+  const nRes = n => n + (n === 1 ? " reserva" : " reservas");
+  const leerPesos = v => parseInt(String(v || "").replace(/\D/g, ""), 10) || 0;
+  const toEmail = u => { u = String(u || "").trim().toLowerCase(); return u.includes("@") ? u : u + "@" + DOMINIO_USUARIOS; };
+
+  /* ---------- almacenamiento: Firebase o memoria (modo de prueba) ---------- */
+  const CONFIG_OK = typeof firebase !== "undefined" && firebaseConfig.apiKey && !/^PEGA/.test(firebaseConfig.apiKey);
+  let Store, Auth;
+
+  function fireStore(db) {
+    const arr = s => s.docs.map(d => ({ ...d.data(), id: d.id }));
+    const ref = (c, id) => db.collection(c).doc(id);
+    return {
+      listenCol: (c, cb, err) => db.collection(c).onSnapshot(s => cb(arr(s)), err),
+      listenDoc: (c, id, cb, err) => ref(c, id).onSnapshot(s => cb(s.exists ? s.data() : null), err),
+      get: async (c, id) => { const s = await ref(c, id).get(); return s.exists ? s.data() : null; },
+      set: (c, id, d, merge) => ref(c, id).set(d, merge ? { merge: true } : {}),
+      add: (c, d) => db.collection(c).add(d),
+      del: (c, id) => ref(c, id).delete(),
+      delField: (c, id, a, b) => ref(c, id).update(new firebase.firestore.FieldPath(a, b), firebase.firestore.FieldValue.delete()),
+      async setMany(c, items, prog) {
+        for (let i = 0; i < items.length; i += 400) {
+          const b = db.batch();
+          items.slice(i, i + 400).forEach(it => b.set(ref(c, it.id), it.data));
+          await b.commit(); prog && prog(Math.min(i + 400, items.length));
+        }
+      },
+      async delMany(c, ids) {
+        for (let i = 0; i < ids.length; i += 400) { const b = db.batch(); ids.slice(i, i + 400).forEach(id => b.delete(ref(c, id))); await b.commit(); }
+      },
+      crearPrimerAdmin(uid, perfil) {
+        const b = db.batch();
+        b.set(ref("usuarios", uid), perfil);
+        b.set(ref("config", "setup"), { admin: uid, creado: new Date().toISOString() });
+        return b.commit();
+      }
+    };
+  }
+  function memStore() {
+    const data = {}; const subs = new Set();
+    const col = c => data[c] || (data[c] = {});
+    const emit = c => setTimeout(() => subs.forEach(s => { if (s.c === c) s.fire(); }), 0);
+    const merge = (a, b) => { for (const k in b) { if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k])) a[k] = merge(a[k] && typeof a[k] === "object" ? a[k] : {}, b[k]); else a[k] = b[k]; } return a; };
+    return {
+      listenCol(c, cb) { const s = { c, fire: () => cb(Object.entries(col(c)).map(([id, d]) => ({ ...clone(d), id }))) }; subs.add(s); s.fire(); return () => subs.delete(s); },
+      listenDoc(c, id, cb) { const s = { c, fire: () => cb(col(c)[id] ? clone(col(c)[id]) : null) }; subs.add(s); s.fire(); return () => subs.delete(s); },
+      async get(c, id) { return col(c)[id] ? clone(col(c)[id]) : null; },
+      async set(c, id, d, m) { col(c)[id] = m ? merge(col(c)[id] || {}, clone(d)) : clone(d); emit(c); },
+      async add(c, d) { const id = "m" + Math.random().toString(36).slice(2, 10); col(c)[id] = clone(d); emit(c); return { id }; },
+      async del(c, id) { delete col(c)[id]; emit(c); },
+      async delField(c, id, a, b) { if (col(c)[id] && col(c)[id][a]) delete col(c)[id][a][b]; emit(c); },
+      async setMany(c, items, prog) { items.forEach(it => { col(c)[it.id] = clone(it.data); }); emit(c); prog && prog(items.length); },
+      async delMany(c, ids) { ids.forEach(id => delete col(c)[id]); emit(c); },
+      async crearPrimerAdmin() {}
+    };
+  }
+  function fireAuth() {
+    const auth = firebase.auth();
+    return {
+      onChange: cb => auth.onAuthStateChanged(u => cb(u ? { uid: u.uid } : null)),
+      login: (u, p) => auth.signInWithEmailAndPassword(toEmail(u), p),
+      logout: () => auth.signOut(),
+      async crearCuenta(u, p) { const c = await auth.createUserWithEmailAndPassword(toEmail(u), p); return c.user.uid; },
+      async crearOtro(u, p) {
+        const sec = firebase.apps.find(a => a.name === "secundaria") || firebase.initializeApp(firebaseConfig, "secundaria");
+        const c = await sec.auth().createUserWithEmailAndPassword(toEmail(u), p);
+        const uid = c.user.uid; await sec.auth().signOut(); return uid;
+      },
+      async cambiarClave(actual, nueva) {
+        const u = auth.currentUser;
+        await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, actual));
+        await u.updatePassword(nueva);
+      }
+    };
+  }
+  function demoAuth() {
+    let cb = () => {}; let user = null;
+    return {
+      onChange(f) { cb = f; setTimeout(() => cb(user), 0); },
+      async login(u, p) {
+        if (!u || !p) throw { code: "auth/invalid-credential" };
+        await Store.set("usuarios", "demo", { nombre: cap(String(u).trim()), usuario: String(u).trim().toLowerCase(), rol: "admin" });
+        user = { uid: "demo" }; cb(user);
+      },
+      async logout() { user = null; cb(null); },
+      async crearCuenta() { return "demo"; },
+      async crearOtro(u) { return "demo-" + slug(u); },
+      async cambiarClave() {}
+    };
+  }
+  if (CONFIG_OK) { firebase.initializeApp(firebaseConfig); Store = fireStore(firebase.firestore()); Auth = fireAuth(); }
+  else { S.demo = true; Store = memStore(); Auth = demoAuth(); }
+
+  function errTexto(e) {
+    const c = (e && e.code) || "";
+    if (/invalid-credential|wrong-password|user-not-found|invalid-email|invalid-login/.test(c)) return "Usuario o contraseña incorrectos.";
+    if (/too-many-requests/.test(c)) return "Demasiados intentos. Espera unos minutos y vuelve a intentar.";
+    if (/network/.test(c)) return "Sin conexión. Revisa el internet e intenta de nuevo.";
+    if (/email-already-in-use/.test(c)) return "Ese usuario ya existe.";
+    if (/weak-password/.test(c)) return "La contraseña debe tener al menos 6 caracteres.";
+    if (/operation-not-allowed/.test(c)) return "Falta activar el ingreso con correo y contraseña en Firebase (Authentication › Método de acceso).";
+    if (/requires-recent-login/.test(c)) return "Por seguridad, sal y vuelve a entrar antes de cambiar la contraseña.";
+    if (/permission-denied/.test(c)) return "No tienes permiso para hacer esto.";
+    if (/resource-exhausted|quota/.test(c)) return "Se llegó al límite de uso de Firebase. Intenta más tarde.";
+    return "No se pudo completar. Intenta de nuevo.";
+  }
+
+  /* ---------- edificios y apartamentos ---------- */
+  function todosAptos() {
+    const s = new Set();
+    (S.config?.edificios || []).forEach(e => (e.aptos || []).forEach(a => s.add(a)));
+    S.movs.forEach(m => m.apto && s.add(m.apto));
+    S.gastos.forEach(g => g.apto && !String(g.apto).startsWith("ed:") && s.add(g.apto));
+    return [...s].sort(natSort);
+  }
+  function mkCtx() {
+    const aptos = todosAptos();
+    const eds = (S.config?.edificios || []).map(e => ({ ...e, aptos: [...(e.aptos || [])].sort(natSort) }));
+    const asignados = new Set(eds.flatMap(e => e.aptos));
+    const sin = aptos.filter(a => !asignados.has(a));
+    if (sin.length) eds.push({ id: "sin", nombre: "Sin edificio", color: "gris", aptos: sin, virtual: true });
+    const edOf = {}; eds.forEach(e => e.aptos.forEach(a => { edOf[a] = e; }));
+    const anuncio = {}; S.movs.forEach(m => { if (m.apto && m.anuncio && !anuncio[m.apto]) anuncio[m.apto] = m.anuncio; });
+    return { aptos: eds.flatMap(e => e.aptos), eds, edOf, anuncio };
+  }
+
+  /* ---------- administración (se repite mes a mes hasta que se cambie) ---------- */
+  function adminDe(mes, apto) {
+    const meses = Object.keys(S.admin).filter(m => m <= mes).sort().reverse();
+    for (const m of meses) {
+      const v = S.admin[m] && S.admin[m][apto];
+      if (v !== undefined && v !== null) return { valor: +v || 0, desde: m, heredado: m !== mes };
+    }
+    return { valor: 0, desde: null, heredado: false };
+  }
+
+  /* ---------- cálculos ---------- */
+  function blank() {
+    return { reservas: 0, noches: 0, nochesMes: 0, neto: 0, bruto: 0, comision: 0, ajustes: 0, otros: 0,
+      g: { servicios: 0, administracion: 0, adecuaciones: 0, operacion: 0, otros: 0 }, list: [], ajList: [], manual: [], adm: null };
+  }
+  function cerrar(p, dias, n) {
+    p.ingresos = p.neto + p.ajustes + p.otros;
+    p.gastos = CATS.reduce((s, [k]) => s + (p.g[k] || 0), 0);
+    p.balance = p.ingresos - p.gastos;
+    p.ocup = dias * n > 0 ? p.nochesMes / (dias * n) : 0;
+    p.tarifa = p.noches > 0 ? p.bruto / p.noches : 0;
+    p.estadia = p.reservas > 0 ? p.noches / p.reservas : 0;
+    return p;
+  }
+  function calc(mes, ctx) {
+    const per = {};
+    const get = a => per[a] || (per[a] = blank());
+    ctx.aptos.forEach(get);
+    const [y, mo] = mes.split("-").map(Number);
+    const ini = Date.UTC(y, mo - 1, 1), fin = Date.UTC(y, mo, 1);
+    const dias = Math.round((fin - ini) / 864e5);
+    for (const m of S.movs) {
+      if (m.mes === mes) {
+        const p = get(m.apto);
+        if (m.tipo === "reserva") {
+          const b = brutoDe(m);
+          p.reservas++; p.noches += m.noches || 0; p.neto += m.monto || 0; p.bruto += b; p.comision += b - (m.monto || 0);
+          p.list.push(m);
+        } else { p.ajustes += m.monto || 0; p.ajList.push(m); }
+      }
+      if (m.tipo === "reserva" && m.inicio && m.fin) {
+        const a = Math.max(dUTC(m.inicio), ini), b = Math.min(dUTC(m.fin), fin);
+        if (b > a) get(m.apto).nochesMes += Math.round((b - a) / 864e5);
+      }
+    }
+    for (const g of S.gastos) {
+      if (g.mes !== mes) continue;
+      let targets;
+      if (String(g.apto).startsWith("ed:")) { const e = ctx.eds.find(x => x.id === g.apto.slice(3)); targets = e ? e.aptos : []; }
+      else targets = [g.apto];
+      if (!targets.length) continue;
+      const share = (g.monto || 0) / targets.length;
+      targets.forEach(a => {
+        const p = get(a);
+        if (g.clase === "ingreso") p.otros += share; else if (g.categoria in p.g && g.categoria !== "administracion") p.g[g.categoria] += share;
+        p.manual.push({ ...g, share, repartido: targets.length > 1 });
+      });
+    }
+    Object.keys(per).forEach(a => { const ad = adminDe(mes, a); per[a].adm = ad; per[a].g.administracion = ad.valor; });
+    Object.values(per).forEach(p => cerrar(p, dias, 1));
+    return { per, dias };
+  }
+  function sumar(list, dias) {
+    const t = blank();
+    list.forEach(p => {
+      ["reservas", "noches", "nochesMes", "neto", "bruto", "comision", "ajustes", "otros"].forEach(k => { t[k] += p[k]; });
+      CATS.forEach(([k]) => { t.g[k] += p.g[k] || 0; });
+    });
+    return cerrar(t, dias, list.length || 1);
+  }
+
+  /* ---------- meses ---------- */
+  function mesesDisponibles() {
+    const s = new Set([mesActual()]);
+    S.movs.forEach(m => m.mes && s.add(m.mes));
+    S.gastos.forEach(g => g.mes && s.add(g.mes));
+    Object.keys(S.admin).forEach(m => s.add(m));
+    if (S.mes) s.add(S.mes);
+    return [...s].sort().reverse();
+  }
+  function mesesFormulario() {
+    const s = new Set(mesesDisponibles()); const d = new Date();
+    for (let i = 0; i < 12; i++) { const x = new Date(d.getFullYear(), d.getMonth() - i, 1); s.add(x.getFullYear() + "-" + pad(x.getMonth() + 1)); }
+    return [...s].sort().reverse();
+  }
+  function elegirMesInicial() {
+    if (S.mesElegido) return;
+    const ms = S.movs.map(m => m.mes).filter(Boolean).sort();
+    if (ms.length) S.mes = ms[ms.length - 1];
+  }
+
+  /* ---------- hoja contable ---------- */
+  function fila(cls, v, label) {
+    const z = Math.round(v) === 0, negInc = v < 0 && cls.includes("inc");
+    return `<div class="r ${cls}"><span class="v${z ? " zero" : ""}${negInc ? " neg-v" : ""}">${money(v)}</span><span class="l">${label}</span></div>`;
+  }
+  function filaAdmin(p, apto, editable, mes) {
+    const ad = p.adm || { valor: p.g.administracion, desde: null, heredado: false };
+    const nota = ad.desde === null ? (apto ? "<small>Sin valor todavía</small>" : "") : (ad.heredado ? `<small>Igual que ${esc(mesLabel(ad.desde).toLowerCase())}</small>` : "");
+    const label = `Administración (${pct(p.g.administracion, p.ingresos)})${nota}`;
+    if (!editable) return `<div class="r exp adm"><span class="v${Math.round(p.g.administracion) === 0 ? " zero" : ""}">${money(p.g.administracion)}</span><span class="l">${label}</span></div>`;
+    const explicito = S.admin[mes] && S.admin[mes][apto] !== undefined && S.admin[mes][apto] !== null;
+    return `<div class="r exp adm"><span class="v"><input class="adm-inp${explicito ? "" : " hered"}" id="adm-${slug(apto)}-${mes}" data-adm="${esc(apto)}" data-mes="${mes}" type="text" inputmode="numeric" autocomplete="off" aria-label="Administración del ${esc(apto)}" value="${ad.desde !== null ? money(ad.valor) : ""}" placeholder="$ 0"></span><span class="l">${label}</span></div>`;
+  }
+  function kpis(p) {
+    return `<ul class="kpis"><li><b>${p.reservas}</b> ${p.reservas === 1 ? "reserva" : "reservas"}</li><li><b>${p.nochesMes}</b> noches ocupadas</li><li><b>${pctInt(p.ocup)}</b> ocupación</li><li><b>${money(p.tarifa)}</b> tarifa por noche</li></ul>`;
+  }
+  function hoja(p, o) {
+    const exp = CATS.map(([k, l], i) => {
+      if (k === "administracion") return filaAdmin(p, o.apto, o.editable, o.mes);
+      const label = k === "servicios" && !o.apto ? "Servicios públicos" : l;
+      return fila("exp" + (i === 0 ? " gap" : ""), p.g[k] || 0, `${label} (${pct(p.g[k] || 0, p.ingresos)})`);
+    }).join("");
+    return `<article class="sheet ed-${esc(o.color)}"${o.id ? ` id="${o.id}"` : ""}>
+      <h3 class="sheet-head">${esc(o.titulo)}</h3>
+      ${o.anuncio ? `<p class="anuncio" title="${esc(o.anuncio)}">${esc(o.anuncio)}</p>` : ""}
+      ${o.kpis === false ? "" : kpis(p)}
+      <div class="rows">
+        ${fila("inc", p.neto, `Ingresos por reservas (total: ${p.reservas})`)}
+        ${fila("inc", p.ajustes, "Ajustes y reembolsos Airbnb")}
+        ${fila("inc", p.otros, "Otros ingresos")}
+        ${fila("inc total", p.ingresos, "Total ingresos del mes")}
+        ${exp}
+        ${fila("exp total", p.gastos, `Total gastos del mes (${pct(p.gastos, p.ingresos)})`)}
+        <div class="r bal${p.balance < 0 ? " bal-neg" : ""}"><span class="v">${money(p.balance)}</span><span class="l">Balance del mes (${pct(p.balance, p.ingresos)})</span></div>
+      </div>
+      ${o.detalle || ""}
+    </article>`;
+  }
+  const catLabel = g => g.clase === "ingreso" ? "Otro ingreso" : (CATS.find(([k]) => k === g.categoria) || [, "Gasto"])[1];
+  function detalle(p) {
+    const n = p.list.length + p.ajList.length + p.manual.length;
+    if (!n) return "";
+    const res = [...p.list].sort((a, b) => (a.inicio || "").localeCompare(b.inicio || ""));
+    return `<details class="det"><summary>Ver movimientos (${n})</summary>
+      <div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Estadía</th><th>Huésped</th><th class="num">Noches</th><th class="num">Bruto</th><th class="num">Comisión</th><th class="num">Neto</th></tr></thead>
+        <tbody>
+        ${res.map(m => `<tr><td>${fechaCorta(m.inicio)} → ${fechaCorta(m.fin)}</td><td>${esc(m.huesped)}</td><td class="num">${m.noches || 0}</td><td class="num">${money(brutoDe(m))}</td><td class="num">${money(brutoDe(m) - (m.monto || 0))}</td><td class="num">${money(m.monto)}</td></tr>`).join("")}
+        ${p.ajList.map(m => `<tr class="aj"><td>${fechaCorta(m.fecha)}</td><td colspan="4">${esc(m.tipoTxt)}${m.huesped ? " · " + esc(m.huesped) : ""}</td><td class="num">${money(m.monto)}</td></tr>`).join("")}
+        ${p.manual.map(g => `<tr class="man"><td>Registro manual</td><td colspan="4">${esc(catLabel(g))}${g.descripcion ? " · " + esc(g.descripcion) : ""}${g.repartido ? " (parte repartida)" : ""}</td><td class="num">${g.clase === "ingreso" ? "" : "−"}${money(g.share)}</td></tr>`).join("")}
+        </tbody>
+      </table></div>
+    </details>`;
+  }
+
+  /* ---------- vista: resumen ---------- */
+  function vResumen(ctx) {
+    const el = $("#v-resumen");
+    if (!S.movs.length && !S.gastos.length) {
+      const cargando = !(S.got.movs && S.got.gastos);
+      el.innerHTML = `<div class="card empty">
+        <h2>${cargando ? "Cargando el balance…" : "Todavía no hay datos"}</h2>
+        <p>${cargando ? "Trayendo las reservas y los gastos guardados." : "Importa el informe de ingresos de Airbnb (CSV) y la app arma el balance de cada apartamento, de cada edificio y el general."}</p>
+        ${cargando || !esAdmin() ? "" : `<a class="btn primary" href="#importar">Importar CSV</a>`}
+      </div>`;
+      return;
+    }
+    const L = mesLabel(S.mes);
+    const { per, dias } = calc(S.mes, ctx);
+    const T = sumar(ctx.aptos.map(a => per[a]), dias);
+    const eds = ctx.eds.filter(e => e.aptos.length).map(e => ({ e, t: sumar(e.aptos.map(a => per[a]), dias) }));
+    const sinGastos = ctx.aptos.filter(a => per[a].ingresos !== 0 && per[a].manual.length === 0);
+    const sinAdm = ctx.aptos.filter(a => per[a].adm && per[a].adm.desde === null);
+    const sinEd = ctx.eds.find(e => e.virtual);
+    const maxIng = Math.max(1, ...ctx.aptos.map(a => per[a].ingresos));
+    const avisos = [];
+    if (sinEd) avisos.push(`<p class="notice">${sinEd.aptos.length === 1 ? "El apartamento" : "Los apartamentos"} ${esc(listaY(sinEd.aptos))} no ${sinEd.aptos.length === 1 ? "tiene" : "tienen"} edificio.${esAdmin() ? ` <a href="#edificios">Asígnalos en Edificios</a> para que entren en la transferencia correcta.` : ""}</p>`);
+    if (sinAdm.length) avisos.push(`<p class="notice">Falta el valor de administración de: ${esc(listaY(sinAdm))}.${esAdmin() ? ` <a href="#gastos">Ponerlo ahora</a>` : ""}</p>`);
+    if (sinGastos.length) avisos.push(`<p class="notice">Sin gastos registrados en ${esc(L.toLowerCase())}: ${sinGastos.length === 1 ? "apartamento" : "apartamentos"} ${esc(listaY(sinGastos))}.${esAdmin() ? ` <a href="#gastos">Registrar gastos</a>` : ""}</p>`);
+
+    el.innerHTML = `
+      <div class="toolbar"><button class="btn small" type="button" data-act="imprimir">Imprimir o guardar PDF</button></div>
+      <section class="card hero">
+        <div>
+          <p class="eyebrow">Ingresos de ${esc(L.toLowerCase())}</p>
+          <p class="big">${money(T.ingresos)}</p>
+          <p class="sub">${T.reservas} reservas pagadas por Airbnb en el mes, más ajustes y otros ingresos.</p>
+        </div>
+        <dl class="breakdown">
+          <div><dt>Ingresos brutos de reservas</dt><dd>${money(T.bruto)}</dd></div>
+          <div><dt>Comisión Airbnb</dt><dd class="neg">${money(-T.comision)}</dd></div>
+          <div><dt>Ajustes y reembolsos Airbnb</dt><dd class="${T.ajustes < 0 ? "neg" : ""}">${money(T.ajustes)}</dd></div>
+          <div><dt>Otros ingresos</dt><dd>${money(T.otros)}</dd></div>
+          <div class="tot"><dt>Total ingresos</dt><dd>${money(T.ingresos)}</dd></div>
+        </dl>
+      </section>
+      <div class="stats">
+        <div class="stat"><b>${T.reservas}</b><span>Reservas</span></div>
+        <div class="stat"><b>${T.nochesMes}</b><span>Noches ocupadas en el mes</span></div>
+        <div class="stat"><b>${pctInt(T.ocup)}</b><span>Ocupación promedio</span></div>
+        <div class="stat"><b>${money(T.tarifa)}</b><span>Tarifa promedio por noche</span></div>
+        <div class="stat"><b>${T.estadia.toLocaleString("es-CO", { maximumFractionDigits: 1 })}</b><span>Noches por estadía</span></div>
+      </div>
+      ${avisos.join("")}
+      <div class="cols">
+        <div class="stack">
+          ${hoja(T, { titulo: `Balance general - ${mesExcel(S.mes)}`, color: "accent", kpis: false })}
+          <section class="card transfer">
+            <h2>Transferencia</h2>
+            <table>
+              ${eds.map(({ e, t }) => `<tr class="edrow ed-${esc(e.color)}"><td>${esc(e.nombre)}</td><td class="num${t.balance < 0 ? " neg" : ""}">${money(t.balance)}</td></tr>`).join("")}
+              <tr class="tot"><td>Total</td><td class="num${T.balance < 0 ? " neg" : ""}">${money(T.balance)}</td></tr>
+            </table>
+            <div class="copy-row">
+              <button class="btn" type="button" data-act="copiar">Copiar resumen</button>
+              <span class="copy-msg" id="copy-msg" aria-live="polite"></span>
+            </div>
+            <div id="copy-fallback"></div>
+          </section>
+        </div>
+        <div class="stack">
+          <section class="card">
+            <div class="card-head"><h2>Por apartamento</h2><p class="no-print">Toca uno para ver su hoja</p></div>
+            <ul class="apto-list">
+              ${ctx.aptos.map(a => {
+                const p = per[a], e = ctx.edOf[a];
+                return `<li><a class="apto-row ed-${esc(e.color)}" href="#apartamentos" data-apto="${esc(a)}">
+                  <span class="code">${esc(a)}</span>
+                  <span class="mid"><span class="nm">${esc(e.nombre)} · ${nRes(p.reservas)} · ${pctInt(p.ocup)} ocupación</span><span class="bar"><i style="width:${(Math.max(0, p.ingresos) / maxIng * 100).toFixed(1)}%"></i></span></span>
+                  <span class="nums"><b>${money(p.ingresos)}</b><small class="${p.balance < 0 ? "neg" : ""}">Balance ${money(p.balance)} · ${pct(p.balance, p.ingresos)}</small></span>
+                </a></li>`;
+              }).join("")}
+            </ul>
+          </section>
+          ${graficoMeses(ctx)}
+        </div>
+      </div>`;
+  }
+  function graficoMeses(ctx) {
+    const ms = [...new Set(S.movs.map(m => m.mes).filter(Boolean))].sort().slice(-6);
+    if (ms.length < 2) return "";
+    const vals = ms.map(m => { const { per, dias } = calc(m, ctx); return { m, v: sumar(ctx.aptos.map(a => per[a]), dias).ingresos }; });
+    const max = Math.max(1, ...vals.map(x => x.v));
+    const W = 600, H = 220, top = 28, bottom = 30, side = 10, bw = (W - side * 2) / vals.length;
+    const bars = vals.map((x, i) => {
+      const h = Math.max(0, x.v) / max * (H - top - bottom), xx = side + i * bw + bw * 0.18, w = bw * 0.64, yy = H - bottom - h;
+      const corto = x.v >= 1e6 ? (x.v / 1e6).toLocaleString("es-CO", { maximumFractionDigits: 1 }) + " M" : money(x.v);
+      return `<rect x="${xx.toFixed(1)}" y="${yy.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${x.m === S.mes ? "var(--accent)" : "var(--line-strong)"}"></rect>
+        <text class="lbl" x="${(xx + w / 2).toFixed(1)}" y="${(yy - 8).toFixed(1)}" text-anchor="middle">${corto}</text>
+        <text x="${(xx + w / 2).toFixed(1)}" y="${H - 10}" text-anchor="middle">${MESES[+x.m.slice(5) - 1].slice(0, 3)} ${x.m.slice(2, 4)}</text>`;
+    }).join("");
+    return `<section class="card chart"><div class="card-head"><h2>Ingresos por mes</h2><p>Últimos ${vals.length} meses cargados</p></div>
+      <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos totales por mes"><line x1="${side}" x2="${W - side}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line)"></line>${bars}</svg></section>`;
+  }
+  function textoResumen(ctx) {
+    const { per, dias } = calc(S.mes, ctx);
+    const T = sumar(ctx.aptos.map(a => per[a]), dias);
+    const out = [`BALANCE GENERAL - ${mesExcel(S.mes)}`, ""];
+    out.push(`Ingresos por reservas (${T.reservas}): ${money(T.neto)}`, `Ajustes y reembolsos Airbnb: ${money(T.ajustes)}`, `Otros ingresos: ${money(T.otros)}`, `TOTAL INGRESOS: ${money(T.ingresos)}`, "");
+    CATS.forEach(([k, l]) => out.push(`${l}: ${money(T.g[k])} (${pct(T.g[k], T.ingresos)})`));
+    out.push(`TOTAL GASTOS: ${money(T.gastos)} (${pct(T.gastos, T.ingresos)})`, "", `BALANCE DEL MES: ${money(T.balance)} (${pct(T.balance, T.ingresos)})`, "", "POR APARTAMENTO");
+    ctx.aptos.forEach(a => { const p = per[a]; out.push(`${a} (${ctx.edOf[a].nombre}): ingresos ${money(p.ingresos)}, gastos ${money(p.gastos)}, balance ${money(p.balance)}`); });
+    out.push("", "TRANSFERENCIA");
+    ctx.eds.filter(e => e.aptos.length).forEach(e => out.push(`${e.nombre}: ${money(sumar(e.aptos.map(a => per[a]), dias).balance)}`));
+    out.push(`Total: ${money(T.balance)}`);
+    return out.join("\n");
+  }
+
+  /* ---------- vista: apartamentos ---------- */
+  function vApartamentos(ctx) {
+    const el = $("#v-apartamentos");
+    if (!ctx.aptos.length) {
+      el.innerHTML = `<div class="card empty"><h2>Sin apartamentos todavía</h2><p>Aparecen solos al importar el CSV de Airbnb.</p>${esAdmin() ? `<a class="btn primary" href="#importar">Importar CSV</a>` : ""}</div>`;
+      return;
+    }
+    const { per, dias } = calc(S.mes, ctx);
+    el.innerHTML = `<div class="toolbar"><button class="btn small" type="button" data-act="imprimir">Imprimir o guardar PDF</button></div>` +
+      ctx.eds.filter(e => e.aptos.length).map(e => {
+        const t = sumar(e.aptos.map(a => per[a]), dias);
+        return `<section class="ed-group ed-${esc(e.color)}">
+          <header class="ed-head">
+            <h2><span class="dot"></span>${esc(e.nombre)}</h2>
+            <p>${e.aptos.length} ${e.aptos.length === 1 ? "apartamento" : "apartamentos"} · Ingresos ${money(t.ingresos)} · Gastos ${money(t.gastos)} · <b>Transferencia ${money(t.balance)}</b></p>
+          </header>
+          <div class="sheets">
+            ${e.aptos.map(a => hoja(per[a], { titulo: `${a} - ${e.nombre} - ${mesExcel(S.mes)}`, color: e.color, anuncio: ctx.anuncio[a], detalle: detalle(per[a]), id: "apto-" + slug(a), apto: a, mes: S.mes, editable: esAdmin() })).join("")}
+          </div>
+        </section>`;
+      }).join("");
+    if (S.focusApto) {
+      const target = document.getElementById("apto-" + slug(S.focusApto)); S.focusApto = null;
+      if (target) requestAnimationFrame(() => target.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }));
+    }
+  }
+
+  /* ---------- vista: gastos y administración ---------- */
+  function opcionesApto(ctx, actual) {
+    return ctx.eds.filter(e => e.aptos.length).map(e => `<optgroup label="${esc(e.nombre)}">
+      ${e.aptos.map(a => `<option value="${esc(a)}"${a === actual ? " selected" : ""}>${esc(a)}</option>`).join("")}
+      ${!e.virtual && e.aptos.length > 1 ? `<option value="ed:${esc(e.id)}"${("ed:" + e.id) === actual ? " selected" : ""}>Todo ${esc(e.nombre)} (repartido entre ${e.aptos.length})</option>` : ""}
+    </optgroup>`).join("");
+  }
+  function nombreDestino(g, ctx) {
+    if (String(g.apto).startsWith("ed:")) { const e = ctx.eds.find(x => x.id === g.apto.slice(3)); return e ? `Todo ${e.nombre}` : "Edificio eliminado"; }
+    return g.apto;
+  }
+  function vGastos(ctx) {
+    const admin = esAdmin();
+    $("#g-form").hidden = !admin;
+    const selMes = $("#g-mes"), selApto = $("#g-apto");
+    const mesSel = selMes.dataset.touched ? selMes.value : S.mes;
+    selMes.innerHTML = mesesFormulario().map(m => `<option value="${m}"${m === mesSel ? " selected" : ""}>${mesLabel(m)}</option>`).join("");
+    const aptoSel = selApto.value;
+    selApto.innerHTML = ctx.aptos.length ? opcionesApto(ctx, aptoSel) : `<option value="">Importa el CSV primero</option>`;
+    const L = mesLabel(S.mes);
+
+    // Administración del mes
+    $("#adm-title").textContent = `Administración de ${L.toLowerCase()}`;
+    $("#adm-list").innerHTML = ctx.aptos.length ? `<div class="list-wrap"><table class="list adm-table">
+      <thead><tr><th>Apto</th><th>Edificio</th><th class="num">Valor</th><th></th></tr></thead>
+      <tbody>${ctx.aptos.map(a => {
+        const ad = adminDe(S.mes, a), e = ctx.edOf[a];
+        const explicito = S.admin[S.mes] && S.admin[S.mes][a] !== undefined && S.admin[S.mes][a] !== null;
+        const nota = ad.desde === null ? "Sin valor todavía" : ad.heredado ? `Igual que ${mesLabel(ad.desde).toLowerCase()}` : "";
+        return `<tr><td><b>${esc(a)}</b></td><td><span class="chip ed-${esc(e.color)}"><span class="dot"></span>${esc(e.nombre)}</span></td>
+          <td class="num">${admin ? `<input class="adm-inp${explicito ? "" : " hered"}" id="admg-${slug(a)}-${S.mes}" data-adm="${esc(a)}" data-mes="${S.mes}" type="text" inputmode="numeric" autocomplete="off" aria-label="Administración del ${esc(a)}" value="${ad.desde !== null ? money(ad.valor) : ""}" placeholder="$ 0">` : money(ad.valor)}</td>
+          <td class="muted" style="font-size:.82rem">${esc(nota)}</td></tr>`;
+      }).join("")}</tbody></table></div>` : `<p class="muted" style="margin:0">Aparecen los apartamentos al importar el CSV.</p>`;
+
+    // Registros manuales
+    $("#g-title").textContent = `Registros de ${L.toLowerCase()}`;
+    const regs = S.gastos.filter(g => g.mes === S.mes).sort((a, b) => natSort(nombreDestino(a, ctx), nombreDestino(b, ctx)) || (a.categoria || "").localeCompare(b.categoria || ""));
+    const totG = regs.filter(g => g.clase !== "ingreso").reduce((s, g) => s + (g.monto || 0), 0);
+    const totI = regs.filter(g => g.clase === "ingreso").reduce((s, g) => s + (g.monto || 0), 0);
+    $("#g-total").textContent = regs.length ? `Gastos ${money(totG)}${totI ? ` · Otros ingresos ${money(totI)}` : ""}` : "";
+    if (!regs.length) {
+      $("#g-list").innerHTML = `<p class="muted" style="margin:0">No hay gastos registrados en ${esc(L.toLowerCase())}.${admin ? " Lo que guardes arriba aparece aquí y se descuenta del balance del apartamento." : ""}</p>`;
+      return;
+    }
+    $("#g-list").innerHTML = `<div class="list-wrap"><table class="list list-min">
+      <thead><tr><th>Apartamento</th><th>Tipo</th><th>Descripción</th><th class="num">Valor</th>${admin ? "<th></th>" : ""}</tr></thead>
+      <tbody>${regs.map(g => {
+        const ed = String(g.apto).startsWith("ed:") ? ctx.eds.find(x => x.id === g.apto.slice(3)) : ctx.edOf[g.apto];
+        const conf = S.confirmDel === g.id;
+        return `<tr>
+          <td><span class="chip ed-${esc(ed?.color || "gris")}"><span class="dot"></span>${esc(nombreDestino(g, ctx))}</span></td>
+          <td>${esc(catLabel(g))}</td><td>${esc(g.descripcion || "—")}</td>
+          <td class="num ${g.clase === "ingreso" ? "pos" : "neg"}">${money(g.monto)}</td>
+          ${admin ? `<td class="act">${conf
+            ? `<button class="btn small danger" type="button" data-act="del-si" data-id="${esc(g.id)}">Eliminar</button> <button class="btn small" type="button" data-act="del-no">Cancelar</button>`
+            : `<button class="btn small" type="button" data-act="del" data-id="${esc(g.id)}">Quitar</button>`}</td>` : ""}
+        </tr>`;
+      }).join("")}</tbody></table></div>`;
+  }
+  async function guardarAdmin(inp) {
+    const apto = inp.dataset.adm, mes = inp.dataset.mes, txt = inp.value.trim();
+    const actual = S.admin[mes] ? S.admin[mes][apto] : undefined;
+    const tieneExpl = actual !== undefined && actual !== null;
+    const ad = adminDe(mes, apto);
+    try {
+      if (!txt) {
+        if (tieneExpl) await Store.delField("administracion", mes, "valores", apto);
+        else inp.value = ad.desde !== null ? money(ad.valor) : "";
+      } else {
+        const n = leerPesos(txt);
+        if (n === ad.valor && ad.desde !== null) inp.value = money(n);
+        else await Store.set("administracion", mes, { valores: { [apto]: n }, actualizado: new Date().toISOString(), por: S.user.uid }, true);
+      }
+    } catch (e) { S.error = errTexto(e); }
+    if (S.diferido) { S.diferido = false; render(); }
+  }
+
+  /* ---------- importar CSV ---------- */
+  const COLS = {
+    fecha: ["Fecha", "Date"], tipo: ["Tipo", "Type"], codigo: ["Código de confirmación", "Confirmation code"],
+    inicio: ["Fecha de inicio", "Start date"], fin: ["Fecha de finalización", "End date"], noches: ["Noches", "Nights"],
+    huesped: ["Huésped", "Guest"], anuncio: ["Anuncio", "Listing"], detalles: ["Detalles", "Details"], monto: ["Monto", "Amount"],
+    comision: ["Tarifa por servicio", "Service fee", "Host fee"], limpieza: ["Tarifa de limpieza", "Cleaning fee"], bruto: ["Ingresos brutos", "Gross earnings"]
+  };
+  function parseNum(v) {
+    if (v == null) return 0;
+    let s = String(v).trim().replace(/[^\d,.\-]/g, "");
+    if (!s) return 0;
+    const c = s.lastIndexOf(","), d = s.lastIndexOf(".");
+    if (c > -1 && d > -1) s = c > d ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+    else if (c > -1) s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, "") : s.replace(",", ".");
+    else if ((s.match(/\./g) || []).length > 1) s = s.replace(/\./g, "");
+    const n = parseFloat(s); return isFinite(n) ? n : 0;
+  }
+  function parseFecha(v) {
+    const s = String(v || "").trim();
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); if (!m) return "";
+    let mes = +m[1], dia = +m[2]; if (mes > 12) { const t = mes; mes = dia; dia = t; }
+    return `${m[3]}-${pad(mes)}-${pad(dia)}`;
+  }
+  function clasificar(t) {
+    const n = norm(t);
+    if (/^payout|^pago$|^transferencia/.test(n)) return "payout";
+    if (/ajuste|adjust/.test(n)) return "ajuste";
+    if (/resoluci|resolution/.test(n)) return "resolucion";
+    if (/reserv/.test(n)) return "reserva";
+    return "otro";
+  }
+  const movId = m => [m.tipo, m.codigo || "sin-codigo", m.fecha, Math.floor(Math.abs(m.monto) * 100 + 0.5)].join("-").replace(/[^A-Za-z0-9_\-.~:@+]/g, "_");
+  function armarImport(rows, fields, nombre) {
+    const map = {}, nf = (fields || []).map(f => ({ f, n: norm(f) }));
+    for (const [k, cands] of Object.entries(COLS)) { const hit = nf.find(x => cands.some(c => norm(c) === x.n)); if (hit) map[k] = hit.f; }
+    const faltan = ["fecha", "tipo", "monto"].filter(k => !map[k]);
+    if (faltan.length) return { error: `Este archivo no parece un informe de ingresos de Airbnb: no tiene la columna ${faltan.map(k => COLS[k][0]).join(", ")}.` };
+    const val = (r, k) => (map[k] ? r[map[k]] : "");
+    const movs = []; let pagos = 0, sinFecha = 0;
+    for (const r of rows) {
+      const tipoTxt = String(val(r, "tipo") || "").trim(), tipo = clasificar(tipoTxt);
+      if (tipo === "payout") { pagos++; continue; }
+      const fecha = parseFecha(val(r, "fecha")); if (!fecha) { sinFecha++; continue; }
+      const anuncio = String(val(r, "anuncio") || "").trim();
+      const m = {
+        fecha, mes: fecha.slice(0, 7), tipo, tipoTxt, codigo: String(val(r, "codigo") || "").trim(),
+        inicio: parseFecha(val(r, "inicio")), fin: parseFecha(val(r, "fin")), noches: Math.round(parseNum(val(r, "noches"))),
+        huesped: String(val(r, "huesped") || "").trim(), anuncio, apto: anuncio ? anuncio.split(" - ")[0].trim().slice(0, 40) : "Sin anuncio",
+        detalles: String(val(r, "detalles") || "").trim(), monto: parseNum(val(r, "monto")), bruto: parseNum(val(r, "bruto")),
+        comisionCsv: parseNum(val(r, "comision")), limpieza: parseNum(val(r, "limpieza"))
+      };
+      m.id = movId(m); movs.push(m);
+    }
+    const existentes = new Set(S.movs.map(m => m.id)), vistos = new Set();
+    const nuevos = movs.filter(m => { if (existentes.has(m.id) || vistos.has(m.id)) return false; vistos.add(m.id); return true; });
+    const conocidos = new Set((S.config?.edificios || []).flatMap(e => e.aptos || []));
+    return {
+      nombre, movs, nuevos, pagos, sinFecha,
+      reservas: movs.filter(m => m.tipo === "reserva").length, otros: movs.filter(m => m.tipo !== "reserva").length,
+      repetidos: movs.length - nuevos.length, meses: [...new Set(movs.map(m => m.mes))].sort(),
+      aptosNuevos: [...new Set(movs.map(m => m.apto))].filter(a => !conocidos.has(a)).sort(natSort)
+    };
+  }
+  function leerArchivo(file) {
+    if (!file) return;
+    S.impMsg = ""; S.pending = null;
+    if (!window.Papa) { S.pending = { error: "No se pudo cargar el lector de CSV. Revisa la conexión y recarga la página." }; render(); return; }
+    Papa.parse(file, {
+      header: true, skipEmptyLines: true, transformHeader: h => String(h).replace(/^﻿/, "").trim(),
+      complete: res => { S.pending = armarImport(res.data, res.meta.fields, file.name); render(); },
+      error: () => { S.pending = { error: "No se pudo leer el archivo. Asegúrate de que sea el CSV descargado de Airbnb." }; render(); }
+    });
+  }
+  async function confirmarImport() {
+    const P = S.pending; if (!P || !P.nuevos?.length || S.importing) return;
+    S.importing = true; S.impMsg = `Guardando ${P.nuevos.length} movimientos…`; S.impMsgCls = ""; render();
+    try {
+      await Store.setMany("movs", P.nuevos.map(({ id, ...data }) => ({ id, data: { ...data, importado: new Date().toISOString() } })));
+    } catch (e) { S.importing = false; S.impMsg = errTexto(e); S.impMsgCls = "err"; render(); return; }
+    S.importing = false;
+    const ultimo = P.meses[P.meses.length - 1];
+    S.pending = null; S.impMsg = `Listo: ${P.nuevos.length} movimientos importados.`; S.impMsgCls = "ok";
+    $("#imp-file").value = "";
+    if (ultimo) { S.mes = ultimo; S.mesElegido = true; }
+    location.hash = P.aptosNuevos.length ? "#edificios" : "#resumen";
+    render();
+  }
+  function vImportar() {
+    const P = S.pending; let html = "";
+    if (S.impMsg) html += `<p class="msg ${S.impMsgCls}">${esc(S.impMsg)}</p>`;
+    if (P && P.error) html += `<p class="notice">${esc(P.error)}</p>`;
+    else if (P) html += `<div class="pv-grid">
+        <div><b>${P.reservas}</b><span>Reservas</span></div><div><b>${P.otros}</b><span>Ajustes y reembolsos</span></div>
+        <div><b>${P.nuevos.length}</b><span>Nuevos por guardar</span></div><div><b>${P.repetidos}</b><span>Ya estaban cargados</span></div>
+      </div>
+      <p class="muted" style="margin:0">${esc(P.nombre)} · ${P.meses.map(mesLabel).join(", ") || "sin meses"} · ${P.pagos} pagos al banco omitidos${P.sinFecha ? ` · ${P.sinFecha} filas sin fecha omitidas` : ""}</p>
+      ${P.aptosNuevos.length ? `<p class="notice">Apartamentos que todavía no tienen edificio: <b>${esc(listaY(P.aptosNuevos))}</b>. Después de importar te llevo a Edificios para asignarlos.</p>` : ""}
+      <div class="form-actions" style="margin-top:0">
+        <button class="btn primary" type="button" data-act="importar" ${!P.nuevos.length || S.importing ? "disabled" : ""}>${P.nuevos.length ? `Importar ${P.nuevos.length} movimientos` : "No hay nada nuevo"}</button>
+        <button class="btn" type="button" data-act="imp-cancelar" ${S.importing ? "disabled" : ""}>Cancelar</button>
+      </div>`;
+    $("#imp-preview").innerHTML = html;
+    const porMes = {};
+    S.movs.forEach(m => { const x = porMes[m.mes] || (porMes[m.mes] = { r: 0, o: 0 }); m.tipo === "reserva" ? x.r++ : x.o++; });
+    const ms = Object.keys(porMes).sort().reverse();
+    $("#imp-meses").innerHTML = ms.length ? `<div class="list-wrap"><table class="list">
+      <thead><tr><th>Mes</th><th class="num">Reservas</th><th class="num">Ajustes</th><th></th></tr></thead>
+      <tbody>${ms.map(m => `<tr><td>${mesLabel(m)}</td><td class="num">${porMes[m].r}</td><td class="num">${porMes[m].o}</td><td class="act">${S.confirmMes === m
+        ? `<button class="btn small danger" type="button" data-act="mes-borrar-si" data-mes="${m}">Borrar ${porMes[m].r + porMes[m].o}</button> <button class="btn small" type="button" data-act="mes-borrar-no">Cancelar</button>`
+        : `<button class="btn small" type="button" data-act="mes-borrar" data-mes="${m}">Borrar mes</button>`}</td></tr>`).join("")}</tbody>
+    </table></div><p class="muted" style="margin:10px 0 0;font-size:.84rem">Borrar un mes quita solo lo importado de Airbnb; los gastos y la administración se conservan.</p>`
+      : `<p class="muted" style="margin:0">Todavía no hay meses importados.</p>`;
+  }
+  async function borrarMes(mes) {
+    S.confirmMes = null;
+    try { await Store.delMany("movs", S.movs.filter(m => m.mes === mes).map(m => m.id)); }
+    catch (e) { S.impMsg = errTexto(e); S.impMsgCls = "err"; }
+    render();
+  }
+
+  /* ---------- vista: edificios ---------- */
+  function vEdificios(ctx) {
+    const el = $("#v-edificios");
+    if (!S.cfgDraft || !S.cfgDirty) S.cfgDraft = clone({ edificios: S.config?.edificios || [] });
+    const d = S.cfgDraft;
+    const aptos = [...new Set([...todosAptos(), ...d.edificios.flatMap(e => e.aptos || [])])].sort(natSort);
+    const edDe = a => (d.edificios.find(e => (e.aptos || []).includes(a)) || {}).id || "";
+    el.innerHTML = `
+      <section class="card">
+        <div class="card-head"><h2>Edificios</h2><p>La transferencia del mes se calcula por edificio</p></div>
+        <div class="ed-rows">
+          ${d.edificios.map((e, i) => `<div class="ed-row ed-${esc(e.color)}">
+            <span class="dot"></span>
+            <input class="ed-inp" type="text" id="ed-nombre-${i}" data-ed-nombre="${i}" value="${esc(e.nombre)}" aria-label="Nombre del edificio">
+            <select id="ed-color-${i}" data-ed-color="${i}" aria-label="Color">${COLORES.map(([k, l]) => `<option value="${k}"${k === e.color ? " selected" : ""}>${l}</option>`).join("")}</select>
+            <button class="btn small" type="button" data-act="ed-quitar" data-i="${i}" ${(e.aptos || []).length ? "disabled" : ""} title="${(e.aptos || []).length ? "Primero mueve sus apartamentos a otro edificio" : "Quitar edificio"}">Quitar</button>
+          </div>`).join("") || `<p class="muted" style="margin:0">No hay edificios. Agrega uno y asígnale sus apartamentos.</p>`}
+        </div>
+        <div class="form-actions"><button class="btn" type="button" data-act="ed-agregar">Agregar edificio</button></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Apartamentos</h2><p>Se detectan del nombre del anuncio en Airbnb</p></div>
+        ${aptos.length ? `<div class="list-wrap"><table class="list">
+          <thead><tr><th>Apto</th><th>Anuncio en Airbnb</th><th>Edificio</th></tr></thead>
+          <tbody>${aptos.map(a => `<tr><td><b>${esc(a)}</b></td><td class="muted" style="max-width:340px">${esc(ctx.anuncio[a] || "—")}</td>
+            <td style="min-width:150px"><select id="apto-ed-${slug(a)}" data-apto-ed="${esc(a)}" aria-label="Edificio de ${esc(a)}">
+              <option value="">Sin edificio</option>${d.edificios.map(e => `<option value="${esc(e.id)}"${edDe(a) === e.id ? " selected" : ""}>${esc(e.nombre)}</option>`).join("")}
+            </select></td></tr>`).join("")}</tbody>
+        </table></div>` : `<p class="muted" style="margin:0">Aparecen al importar el CSV.</p>`}
+      </section>
+      <div class="form-actions" style="margin-top:0">
+        <button class="btn primary" type="button" data-act="cfg-guardar" id="cfg-guardar" ${S.cfgDirty ? "" : "disabled"}>Guardar cambios</button>
+        <button class="btn" type="button" data-act="cfg-descartar" id="cfg-descartar" ${S.cfgDirty ? "" : "disabled"}>Descartar</button>
+        <p class="msg ${S.cfgMsgCls}" aria-live="polite">${esc(S.cfgMsg)}</p>
+      </div>`;
+  }
+  function marcarCfg() { S.cfgDirty = true; S.cfgMsg = ""; $("#cfg-guardar").disabled = false; $("#cfg-descartar").disabled = false; }
+  async function guardarCfg() {
+    const d = S.cfgDraft;
+    if (d.edificios.some(e => !String(e.nombre).trim())) { S.cfgMsg = "Ponle nombre a cada edificio."; S.cfgMsgCls = "err"; render(); return; }
+    const body = { edificios: d.edificios.map(e => ({ id: e.id, nombre: String(e.nombre).trim(), color: e.color || "gris", aptos: [...(e.aptos || [])].sort(natSort) })) };
+    try { await Store.set("config", "edificios", body); S.config = body; S.cfgDirty = false; S.cfgDraft = null; S.cfgMsg = "Cambios guardados."; S.cfgMsgCls = "ok"; }
+    catch (e) { S.cfgMsg = errTexto(e); S.cfgMsgCls = "err"; }
+    render();
+  }
+
+  /* ---------- vista: usuarios ---------- */
+  function vUsuarios() {
+    const admin = esAdmin();
+    $("#u-admin").hidden = !admin; $("#u-form").hidden = !admin;
+    if (!admin) return;
+    const lista = [...S.usuarios].sort((a, b) => String(a.nombre || "").localeCompare(String(b.nombre || ""), "es"));
+    $("#u-list").innerHTML = `<div class="list-wrap"><table class="list"><thead><tr><th>Nombre</th><th>Usuario</th><th>Permiso</th></tr></thead><tbody>
+      ${lista.map(u => `<tr><td><b>${esc(u.nombre || "—")}</b>${u.id === S.user.uid ? ' <span class="muted">(tú)</span>' : ""}</td><td>${esc(u.usuario || "—")}</td>
+        <td style="min-width:170px">${u.id === S.user.uid ? esc(ROLES[u.rol] || u.rol) : `<select id="rol-${esc(u.id)}" data-rol-uid="${esc(u.id)}" aria-label="Permiso de ${esc(u.nombre || u.usuario)}">${Object.entries(ROLES).map(([k, l]) => `<option value="${k}"${k === u.rol ? " selected" : ""}>${l}</option>`).join("")}</select>`}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  }
+
+  /* ---------- render ---------- */
+  function renderMeses() {
+    const ms = mesesDisponibles(), sel = $("#mes-sel");
+    sel.innerHTML = ms.map(m => `<option value="${m}"${m === S.mes ? " selected" : ""}>${mesLabel(m)}</option>`).join("");
+    const i = ms.indexOf(S.mes);
+    $("#mes-prev").disabled = i < 0 || i >= ms.length - 1;
+    $("#mes-next").disabled = i <= 0;
+  }
+  function render() {
+    if ($("#scr-app").hidden) return;
+    const a = document.activeElement;
+    if (a && a.matches && a.matches(".adm-inp, .ed-inp")) { S.diferido = true; return; }
+    if (!S.mes) S.mes = mesActual();
+    const admin = esAdmin();
+    if (!admin && ["importar", "edificios"].includes(S.view)) S.view = "resumen";
+    const ctx = mkCtx();
+    renderMeses();
+    $("#status").textContent = S.demo ? "Modo de prueba: la app no está conectada a Firebase y nada de lo que hagas se guarda." : S.error;
+    $("#who-nombre").textContent = S.perfil?.nombre || S.perfil?.usuario || "";
+    $("#who-rol").textContent = "· " + (ROLES[S.perfil?.rol] || "");
+    document.querySelectorAll("[data-solo-admin]").forEach(t => { t.hidden = !admin; });
+    $("#tab-usuarios").textContent = admin ? "Usuarios" : "Mi cuenta";
+    document.querySelectorAll(".tabs a").forEach(t => { if (t.dataset.view === S.view) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current"); });
+    VIEWS.forEach(v => { $("#v-" + v).hidden = v !== S.view; });
+    if (S.view === "resumen") vResumen(ctx);
+    else if (S.view === "apartamentos") vApartamentos(ctx);
+    else if (S.view === "gastos") vGastos(ctx);
+    else if (S.view === "importar") vImportar(ctx);
+    else if (S.view === "edificios") vEdificios(ctx);
+    else if (S.view === "usuarios") vUsuarios(ctx);
+  }
+  function route() { const h = location.hash.slice(1); S.view = VIEWS.includes(h) ? h : "resumen"; render(); }
+  function pantalla(nombre) { ["carga", "login", "sin-acceso", "app"].forEach(n => { $("#scr-" + n).hidden = n !== nombre; }); }
+
+  /* ---------- sesión y datos ---------- */
+  let subsPerfil = [], subsDatos = [];
+  const parar = arr => { arr.forEach(f => { try { f(); } catch (_) {} }); arr.length = 0; };
+  function errDatos(e) { S.error = errTexto(e); render(); }
+  function iniciarDatos() {
+    if (subsDatos.length) return;
+    subsDatos.push(Store.listenCol("movs", list => { S.movs = list; S.got.movs = true; elegirMesInicial(); render(); }, errDatos));
+    subsDatos.push(Store.listenCol("gastos", list => { S.gastos = list; S.got.gastos = true; render(); }, errDatos));
+    subsDatos.push(Store.listenCol("administracion", list => { const o = {}; list.forEach(d => { o[d.id] = d.valores || {}; }); S.admin = o; S.got.admin = true; render(); }, errDatos));
+    subsDatos.push(Store.listenDoc("config", "edificios", d => { S.config = d || { edificios: [] }; S.got.config = true; if (!(S.view === "edificios" && S.cfgDirty)) render(); }, errDatos));
+  }
+  let subUsuarios = null;
+  function escucharUsuarios() {
+    if (esAdmin() && !subUsuarios) subUsuarios = Store.listenCol("usuarios", list => { S.usuarios = list; render(); }, () => {});
+    if (!esAdmin() && subUsuarios) { subUsuarios(); subUsuarios = null; S.usuarios = []; }
+  }
+  async function mostrarLogin() {
+    pantalla("login");
+    $("#login-form").hidden = false; $("#setup-form").hidden = true;
+    $("#demo-note").hidden = !S.demo;
+    if (S.demo) { $("#ir-setup").hidden = true; return; }
+    try { S.setupExiste = !!(await Store.get("config", "setup")); } catch (_) { S.setupExiste = true; }
+    $("#ir-setup").hidden = S.setupExiste;
+  }
+  Auth.onChange(user => {
+    parar(subsPerfil); parar(subsDatos); if (subUsuarios) { subUsuarios(); subUsuarios = null; }
+    Object.assign(S, { user, perfil: null, movs: [], gastos: [], admin: {}, config: null, usuarios: [], error: "", got: { movs: false, gastos: false, admin: false, config: false }, mesElegido: false, mes: mesActual(), pending: null, impMsg: "" });
+    if (!user) { mostrarLogin(); return; }
+    pantalla("carga");
+    subsPerfil.push(Store.listenDoc("usuarios", user.uid, perfil => {
+      S.perfil = perfil;
+      if (!perfil && S.creando) { pantalla("carga"); return; }
+      if (!perfil || !["admin", "consulta"].includes(perfil.rol)) { parar(subsDatos); mostrarSinAcceso(); return; }
+      iniciarDatos(); escucharUsuarios();
+      pantalla("app"); route();
+    }, () => { pantalla("sin-acceso"); }));
+  });
+
+  /* ---------- eventos ---------- */
+  $("#login-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("#login-msg"), btn = $("#login-btn"); msg.textContent = "";
+    const u = $("#login-user").value.trim(), p = $("#login-pass").value;
+    if (!u || !p) { msg.textContent = "Escribe tu usuario y tu contraseña."; return; }
+    btn.disabled = true;
+    try { await Auth.login(u, p); $("#login-pass").value = ""; } catch (err) { msg.textContent = errTexto(err); }
+    btn.disabled = false;
+  });
+  $("#ir-setup").addEventListener("click", () => { $("#login-form").hidden = true; $("#setup-form").hidden = false; $("#setup-nombre").focus(); });
+  $("#volver-login").addEventListener("click", () => { $("#setup-form").hidden = true; $("#login-form").hidden = false; });
+  $("#setup-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("#setup-msg"), btn = $("#setup-btn"); msg.textContent = "";
+    const nombre = $("#setup-nombre").value.trim(), usuario = $("#setup-user").value.trim().toLowerCase(), p1 = $("#setup-pass").value, p2 = $("#setup-pass2").value;
+    if (!nombre) { msg.textContent = "Escribe tu nombre."; return; }
+    if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) { msg.textContent = "El usuario debe tener entre 3 y 30 letras o números, sin espacios."; return; }
+    if (p1.length < 6) { msg.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
+    if (p1 !== p2) { msg.textContent = "Las contraseñas no coinciden."; return; }
+    btn.disabled = true;
+    S.creando = true; S.adminPendiente = { nombre, usuario };
+    let uid = null;
+    try { uid = await Auth.crearCuenta(usuario, p1); }
+    catch (err) { S.creando = false; msg.textContent = errTexto(err); btn.disabled = false; return; }
+    await terminarAdmin(uid);
+    btn.disabled = false;
+  });
+  async function terminarAdmin(uid) {
+    const datos = { ...(S.adminPendiente || {}) };
+    if (!datos.usuario && CONFIG_OK) {
+      const email = (firebase.auth().currentUser && firebase.auth().currentUser.email) || "";
+      datos.usuario = email.split("@")[0];
+      if (!datos.nombre || datos.nombre === "Administrador") datos.nombre = cap(datos.usuario || "Administrador");
+    }
+    try {
+      await Store.crearPrimerAdmin(uid, { nombre: datos.nombre || datos.usuario || "Administrador", usuario: datos.usuario || "", rol: "admin", creado: new Date().toISOString() });
+      S.creando = false; S.adminPendiente = null;
+    } catch (err) {
+      S.creando = false;
+      mostrarSinAcceso(errTexto(err) + " Revisa que las reglas de Firestore estén publicadas y vuelve a intentar.");
+    }
+  }
+  async function mostrarSinAcceso(error) {
+    pantalla("sin-acceso");
+    $("#sa-msg").textContent = error || "";
+    $("#sa-reintentar").hidden = true;
+    if (S.demo || !S.user) return;
+    let setup = true;
+    try { setup = !!(await Store.get("config", "setup")); } catch (_) { setup = true; }
+    if (!setup) {
+      $("#sa-texto").textContent = "Tu cuenta quedó creada, pero falta guardarla como administrador.";
+      $("#sa-reintentar").hidden = false;
+    } else {
+      $("#sa-texto").textContent = "Tu usuario existe, pero no tiene acceso a la app. Pídele al administrador que lo active.";
+    }
+  }
+  $("#sa-reintentar").addEventListener("click", async () => {
+    const b = $("#sa-reintentar"); b.disabled = true;
+    if (!S.adminPendiente) S.adminPendiente = { usuario: "", nombre: "Administrador" };
+    S.creando = true; pantalla("carga");
+    await terminarAdmin(S.user.uid);
+    b.disabled = false;
+  });
+
+  addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
+  const cambiarMes = m => { S.mes = m; S.mesElegido = true; S.confirmDel = null; delete $("#g-mes").dataset.touched; render(); };
+  $("#mes-sel").addEventListener("change", e => cambiarMes(e.target.value));
+  $("#mes-prev").addEventListener("click", () => { const ms = mesesDisponibles(), i = ms.indexOf(S.mes); if (i < ms.length - 1) cambiarMes(ms[i + 1]); });
+  $("#mes-next").addEventListener("click", () => { const ms = mesesDisponibles(), i = ms.indexOf(S.mes); if (i > 0) cambiarMes(ms[i - 1]); });
+
+  document.addEventListener("click", e => {
+    const row = e.target.closest("a.apto-row");
+    if (row) { S.focusApto = row.dataset.apto; return; }
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const act = b.dataset.act;
+    if (act === "salir") Auth.logout();
+    else if (act === "imprimir") window.print();
+    else if (act === "copiar") {
+      const txt = textoResumen(mkCtx()), msg = $("#copy-msg"), fb = $("#copy-fallback");
+      const mostrar = () => { fb.innerHTML = `<textarea class="copy-box" id="copy-box" readonly aria-label="Resumen para copiar"></textarea>`; const ta = $("#copy-box"); ta.value = txt; ta.focus(); ta.select(); msg.textContent = "Selecciona el texto y cópialo."; };
+      try { navigator.clipboard.writeText(txt).then(() => { msg.textContent = "Copiado. Pégalo en WhatsApp o en un correo."; fb.innerHTML = ""; }, mostrar); } catch (_) { mostrar(); }
+    }
+    else if (act === "del") { S.confirmDel = b.dataset.id; render(); }
+    else if (act === "del-no") { S.confirmDel = null; render(); }
+    else if (act === "del-si") borrarGasto(b.dataset.id);
+    else if (act === "importar") confirmarImport();
+    else if (act === "imp-cancelar") { S.pending = null; S.impMsg = ""; $("#imp-file").value = ""; render(); }
+    else if (act === "mes-borrar") { S.confirmMes = b.dataset.mes; render(); }
+    else if (act === "mes-borrar-no") { S.confirmMes = null; render(); }
+    else if (act === "mes-borrar-si") borrarMes(b.dataset.mes);
+    else if (act === "ed-agregar") { S.cfgDraft.edificios.push({ id: "e" + Date.now().toString(36), nombre: "Nuevo edificio", color: COLORES[S.cfgDraft.edificios.length % COLORES.length][0], aptos: [] }); S.cfgDirty = true; S.cfgMsg = ""; render(); }
+    else if (act === "ed-quitar") { S.cfgDraft.edificios.splice(+b.dataset.i, 1); S.cfgDirty = true; S.cfgMsg = ""; render(); }
+    else if (act === "cfg-guardar") guardarCfg();
+    else if (act === "cfg-descartar") { S.cfgDirty = false; S.cfgDraft = null; S.cfgMsg = ""; render(); }
+  });
+  document.addEventListener("input", e => {
+    const t = e.target;
+    if (t.dataset.edNombre !== undefined) {
+      const ed = S.cfgDraft.edificios[+t.dataset.edNombre];
+      ed.nombre = t.value; marcarCfg();
+      document.querySelectorAll("[data-apto-ed] option").forEach(o => { if (o.value === ed.id) o.textContent = t.value || "Sin nombre"; });
+    }
+  });
+  document.addEventListener("focusin", e => {
+    const t = e.target;
+    if (!t.matches(".adm-inp")) return;
+    t.select();
+    t.addEventListener("mouseup", ev => ev.preventDefault(), { once: true }); // que el clic no quite la selección
+  });
+  document.addEventListener("focusout", e => {
+    const t = e.target;
+    if (t.matches(".adm-inp")) guardarAdmin(t);
+    else if (t.matches(".ed-inp") && S.diferido) { S.diferido = false; setTimeout(render, 0); }
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches(".adm-inp")) { e.preventDefault(); e.target.blur(); } });
+  document.addEventListener("change", e => {
+    const t = e.target;
+    if (t.dataset.edColor !== undefined) { S.cfgDraft.edificios[+t.dataset.edColor].color = t.value; S.cfgDirty = true; S.cfgMsg = ""; render(); }
+    else if (t.dataset.aptoEd !== undefined) {
+      const a = t.dataset.aptoEd;
+      S.cfgDraft.edificios.forEach(ed => { ed.aptos = (ed.aptos || []).filter(x => x !== a); });
+      const dest = S.cfgDraft.edificios.find(ed => ed.id === t.value); if (dest) dest.aptos.push(a);
+      S.cfgDirty = true; S.cfgMsg = ""; render();
+    }
+    else if (t.dataset.rolUid !== undefined) {
+      Store.set("usuarios", t.dataset.rolUid, { rol: t.value }, true).catch(err => { S.error = errTexto(err); render(); });
+    }
+    else if (t.id === "g-mes") t.dataset.touched = "1";
+    else if (t.id === "imp-file") leerArchivo(t.files && t.files[0]);
+  });
+
+  const drop = $("#drop");
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => { const f = e.dataTransfer?.files?.[0]; if (f) leerArchivo(f); });
+
+  const montoInp = $("#g-monto");
+  montoInp.addEventListener("blur", () => { const n = leerPesos(montoInp.value); montoInp.value = n ? money(n) : ""; });
+  $("#g-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("#g-msg"), apto = $("#g-apto").value, cat = $("#g-cat").value, mes = $("#g-mes").value, monto = leerPesos(montoInp.value);
+    if (!apto) { msg.textContent = "Elige el apartamento."; msg.className = "msg err"; return; }
+    if (!(monto > 0)) { msg.textContent = "Escribe el valor."; msg.className = "msg err"; montoInp.focus(); return; }
+    const doc = { mes, apto, clase: cat === "ingreso" ? "ingreso" : "gasto", categoria: cat, descripcion: $("#g-desc").value.trim(), monto, creado: new Date().toISOString(), por: S.user.uid };
+    const btn = $("#g-save"); btn.disabled = true;
+    try {
+      await Store.add("gastos", doc);
+      msg.textContent = `Guardado: ${money(monto)} en ${mesLabel(mes).toLowerCase()}.`; msg.className = "msg ok";
+      montoInp.value = ""; $("#g-desc").value = ""; montoInp.focus();
+      if (mes !== S.mes) { S.mes = mes; S.mesElegido = true; }
+    } catch (err) { msg.textContent = errTexto(err); msg.className = "msg err"; }
+    btn.disabled = false; render();
+  });
+  async function borrarGasto(id) {
+    S.confirmDel = null;
+    try { await Store.del("gastos", id); } catch (err) { $("#g-msg").textContent = errTexto(err); $("#g-msg").className = "msg err"; }
+    render();
+  }
+
+  $("#u-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("#u-msg"), btn = $("#u-save");
+    const nombre = $("#u-nombre").value.trim(), usuario = $("#u-user").value.trim().toLowerCase(), pass = $("#u-pass").value, rol = $("#u-rol").value;
+    msg.className = "msg err";
+    if (!nombre) { msg.textContent = "Escribe el nombre."; return; }
+    if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) { msg.textContent = "El usuario debe tener entre 3 y 30 letras o números, sin espacios."; return; }
+    if (pass.length < 6) { msg.textContent = "La contraseña debe tener al menos 6 caracteres."; return; }
+    btn.disabled = true; msg.textContent = "";
+    try {
+      const uid = await Auth.crearOtro(usuario, pass);
+      await Store.set("usuarios", uid, { nombre, usuario, rol, creado: new Date().toISOString(), por: S.user.uid });
+      msg.textContent = `Usuario creado. ${nombre} entra con "${usuario}" y la contraseña que pusiste.`; msg.className = "msg ok";
+      ["#u-nombre", "#u-user", "#u-pass"].forEach(s => { $(s).value = ""; });
+    } catch (err) { msg.textContent = errTexto(err); }
+    btn.disabled = false;
+  });
+  $("#pw-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const msg = $("#pw-msg"), a = $("#pw-actual").value, n1 = $("#pw-nueva").value, n2 = $("#pw-nueva2").value;
+    msg.className = "msg err";
+    if (n1.length < 6) { msg.textContent = "La nueva contraseña debe tener al menos 6 caracteres."; return; }
+    if (n1 !== n2) { msg.textContent = "Las contraseñas nuevas no coinciden."; return; }
+    try { await Auth.cambiarClave(a, n1); msg.textContent = "Contraseña cambiada."; msg.className = "msg ok"; ["#pw-actual", "#pw-nueva", "#pw-nueva2"].forEach(s => { $(s).value = ""; }); }
+    catch (err) { msg.textContent = errTexto(err); }
+  });
+})();
+</script>
+</body>
+</html>
