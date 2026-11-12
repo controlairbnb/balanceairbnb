@@ -1,7 +1,8 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" translate="no">
 <head>
 <meta charset="utf-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Balance Caridi &amp; Blue</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -96,6 +97,7 @@ button,input,select{font:inherit;color:inherit}
 
 main{padding-block:20px 56px}
 .view{display:grid;gap:20px}
+.view>*,.stack>*{min-width:0}
 .status{margin:0 0 16px;padding:10px 14px;border-radius:8px;background:var(--warn-soft);border:1px solid var(--warn-line);font-size:.88rem}
 .status:empty{display:none}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
@@ -147,12 +149,17 @@ main{padding-block:20px 56px}
 .r.bal .v{font-family:var(--font-head);font-size:1.45rem;font-weight:700;color:var(--pos)}
 .r.bal .l{font-weight:700;font-size:.88rem}
 .r.bal.bal-neg .v{color:var(--neg)}
-.r.adm{background:var(--ed-soft);margin-inline:-8px;padding-inline:8px;border-radius:6px}
-.adm-inp{width:100%;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--neg);background:var(--surface);border:1px dashed var(--line-strong);border-radius:6px;padding:4px 8px;min-height:32px}
-.adm-inp:hover{border-style:solid}
-.adm-inp:focus{border-style:solid;border-color:var(--accent)}
-.adm-inp::placeholder{color:var(--muted);font-weight:400}
+.adm-inp,.val-inp{width:100%;min-width:96px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--neg);background:var(--surface);border:1px dashed var(--line-strong);border-radius:6px;padding:4px 8px;min-height:32px}
+.adm-inp:hover,.val-inp:hover{border-style:solid}
+.adm-inp:focus,.val-inp:focus{border-style:solid;border-color:var(--accent)}
+.adm-inp::placeholder,.val-inp::placeholder{color:var(--muted);font-weight:400}
 .adm-inp.hered{color:var(--muted)}
+.val-inp.ing{color:var(--pos)}
+.grid-mes{min-width:1040px}
+.grid-mes th,.grid-mes td{white-space:nowrap}
+.grid-mes td.num b{font-variant-numeric:tabular-nums}
+.grid-mes tfoot td{font-weight:700;border-top:2px solid var(--line-strong);border-bottom:0}
+.status.ok{background:var(--accent-soft);border-color:var(--accent)}
 
 .det{border-top:1px solid var(--line)}
 .det summary{cursor:pointer;padding:10px 16px;font-size:.86rem;font-weight:600;color:var(--accent)}
@@ -276,7 +283,7 @@ main{padding-block:20px 56px}
   .top,.toolbar,.notice,.status,.det,.copy-row,#copy-fallback,.no-print{display:none!important}
   main{padding:0}
   .card,.sheet{border-color:#BBB}
-  .adm-inp{border:0;padding:0;background:none}
+  .adm-inp,.val-inp{border:0;padding:0;background:none}
 }
 </style>
 </head>
@@ -356,8 +363,13 @@ main{padding-block:20px 56px}
     <section class="view" id="v-apartamentos" hidden></section>
 
     <section class="view" id="v-gastos" hidden>
+      <section class="card">
+        <div class="card-head"><h2 id="adm-title">Valores del mes</h2><p id="adm-ayuda">Toca un valor para cambiarlo. La administración en gris se repite del mes anterior.</p></div>
+        <div id="adm-list"></div>
+      </section>
       <form id="g-form" class="card" novalidate>
-        <h2>Registrar gasto u otro ingreso</h2>
+        <h2>Registrar un gasto con detalle</h2>
+        <p class="muted" style="margin:-6px 0 12px;font-size:.88rem">Opcional: úsalo para anotar de qué fue cada gasto o para repartir un gasto entre todo un edificio. Se suma al valor de la tabla.</p>
         <div class="fields">
           <label class="f"><span>Mes</span><select id="g-mes"></select></label>
           <label class="f"><span>Apartamento</span><select id="g-apto"></select></label>
@@ -378,10 +390,6 @@ main{padding-block:20px 56px}
           <p id="g-msg" class="msg" aria-live="polite"></p>
         </div>
       </form>
-      <section class="card">
-        <div class="card-head"><h2 id="adm-title">Administración del mes</h2><p>Si no cambias el valor, se repite el del mes anterior</p></div>
-        <div id="adm-list"></div>
-      </section>
       <section class="card">
         <div class="card-head"><h2 id="g-title">Registros del mes</h2><p id="g-total"></p></div>
         <div id="g-list"></div>
@@ -515,7 +523,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
     const ref = (c, id) => db.collection(c).doc(id);
     return {
       listenCol: (c, cb, err) => db.collection(c).onSnapshot(s => cb(arr(s)), err),
-      listenDoc: (c, id, cb, err) => ref(c, id).onSnapshot(s => cb(s.exists ? s.data() : null), err),
+      listenDoc: (c, id, cb, err, meta) => ref(c, id).onSnapshot(meta ? { includeMetadataChanges: true } : {}, s => cb(s.exists ? s.data() : null, s.metadata), err),
       get: async (c, id) => { const s = await ref(c, id).get(); return s.exists ? s.data() : null; },
       set: (c, id, d, merge) => ref(c, id).set(d, merge ? { merge: true } : {}),
       add: (c, d) => db.collection(c).add(d),
@@ -546,7 +554,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
     const merge = (a, b) => { for (const k in b) { if (b[k] && typeof b[k] === "object" && !Array.isArray(b[k])) a[k] = merge(a[k] && typeof a[k] === "object" ? a[k] : {}, b[k]); else a[k] = b[k]; } return a; };
     return {
       listenCol(c, cb) { const s = { c, fire: () => cb(Object.entries(col(c)).map(([id, d]) => ({ ...clone(d), id }))) }; subs.add(s); s.fire(); return () => subs.delete(s); },
-      listenDoc(c, id, cb) { const s = { c, fire: () => cb(col(c)[id] ? clone(col(c)[id]) : null) }; subs.add(s); s.fire(); return () => subs.delete(s); },
+      listenDoc(c, id, cb) { const s = { c, fire: () => cb(col(c)[id] ? clone(col(c)[id]) : null, { hasPendingWrites: false, fromCache: false }) }; subs.add(s); s.fire(); return () => subs.delete(s); },
       async get(c, id) { return col(c)[id] ? clone(col(c)[id]) : null; },
       async set(c, id, d, m) { col(c)[id] = m ? merge(col(c)[id] || {}, clone(d)) : clone(d); emit(c); },
       async add(c, d) { const id = "m" + Math.random().toString(36).slice(2, 10); col(c)[id] = clone(d); emit(c); return { id }; },
@@ -727,9 +735,33 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
     const ad = p.adm || { valor: p.g.administracion, desde: null, heredado: false };
     const nota = ad.desde === null ? (apto ? "<small>Sin valor todavía</small>" : "") : (ad.heredado ? `<small>Igual que ${esc(mesLabel(ad.desde).toLowerCase())}</small>` : "");
     const label = `Administración (${pct(p.g.administracion, p.ingresos)})${nota}`;
-    if (!editable) return `<div class="r exp adm"><span class="v${Math.round(p.g.administracion) === 0 ? " zero" : ""}">${money(p.g.administracion)}</span><span class="l">${label}</span></div>`;
+    if (!editable) return `<div class="r exp"><span class="v${Math.round(p.g.administracion) === 0 ? " zero" : ""}">${money(p.g.administracion)}</span><span class="l">${label}</span></div>`;
     const explicito = S.admin[mes] && S.admin[mes][apto] !== undefined && S.admin[mes][apto] !== null;
-    return `<div class="r exp adm"><span class="v"><input class="adm-inp${explicito ? "" : " hered"}" id="adm-${slug(apto)}-${mes}" data-adm="${esc(apto)}" data-mes="${mes}" type="text" inputmode="numeric" autocomplete="off" aria-label="Administración del ${esc(apto)}" value="${ad.desde !== null ? money(ad.valor) : ""}" placeholder="$ 0"></span><span class="l">${label}</span></div>`;
+    return `<div class="r exp"><span class="v"><input class="adm-inp${explicito ? "" : " hered"}" id="adm-${slug(apto)}-${mes}" data-adm="${esc(apto)}" data-mes="${mes}" type="text" inputmode="numeric" autocomplete="off" aria-label="Administración del ${esc(apto)}" value="${ad.desde !== null ? money(ad.valor) : ""}" placeholder="$ 0"></span><span class="l">${label}</span></div>`;
+  }
+  const hojaId = (mes, apto, cat) => "hoja-" + mes + "-" + slug(apto) + "-" + cat;
+  // Suma de los registros de una categoría para un apartamento en un mes (incluye su parte de gastos de todo el edificio).
+  function aportes(mes, apto, cat, ctx, excluirId) {
+    let t = 0;
+    for (const g of S.gastos) {
+      if (g.mes !== mes || g.id === excluirId) continue;
+      const c = g.clase === "ingreso" ? "ingreso" : g.categoria;
+      if (c !== cat) continue;
+      let targets;
+      if (String(g.apto).startsWith("ed:")) { const e = ctx.eds.find(x => x.id === g.apto.slice(3)); targets = e ? e.aptos : []; }
+      else targets = [g.apto];
+      if (targets.includes(apto)) t += (g.monto || 0) / targets.length;
+    }
+    return t;
+  }
+  function inputValor(pre, apto, mes, cat, valor, etiqueta) {
+    const vacio = Math.abs(valor) < 0.5;
+    return `<input class="val-inp${cat === "ingreso" ? " ing" : ""}" id="${pre}-${slug(apto)}-${mes}-${cat}" data-val="${esc(apto)}" data-mes="${mes}" data-cat="${cat}" type="text" inputmode="numeric" autocomplete="off" aria-label="${esc(etiqueta)} del ${esc(apto)}" value="${vacio ? "" : money(valor)}" placeholder="$ 0">`;
+  }
+  function filaVal(cls, p, cat, label, o, etiqueta) {
+    const v = cat === "ingreso" ? p.otros : (p.g[cat] || 0);
+    if (!o.editable) return fila(cls, v, label);
+    return `<div class="r ${cls}"><span class="v">${inputValor("val", o.apto, o.mes, cat, v, etiqueta)}</span><span class="l">${label}</span></div>`;
   }
   function kpis(p) {
     return `<ul class="kpis"><li><b>${p.reservas}</b> ${p.reservas === 1 ? "reserva" : "reservas"}</li><li><b>${p.nochesMes}</b> noches ocupadas</li><li><b>${pctInt(p.ocup)}</b> ocupación</li><li><b>${money(p.tarifa)}</b> tarifa por noche</li></ul>`;
@@ -737,8 +769,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
   function hoja(p, o) {
     const exp = CATS.map(([k, l], i) => {
       if (k === "administracion") return filaAdmin(p, o.apto, o.editable, o.mes);
-      const label = k === "servicios" && !o.apto ? "Servicios públicos" : l;
-      return fila("exp" + (i === 0 ? " gap" : ""), p.g[k] || 0, `${label} (${pct(p.g[k] || 0, p.ingresos)})`);
+      return filaVal("exp" + (i === 0 ? " gap" : ""), p, k, `${l} (${pct(p.g[k] || 0, p.ingresos)})`, o, l);
     }).join("");
     return `<article class="sheet ed-${esc(o.color)}"${o.id ? ` id="${o.id}"` : ""}>
       <h3 class="sheet-head">${esc(o.titulo)}</h3>
@@ -747,7 +778,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
       <div class="rows">
         ${fila("inc", p.neto, `Ingresos por reservas (total: ${p.reservas})`)}
         ${fila("inc", p.ajustes, "Ajustes y reembolsos Airbnb")}
-        ${fila("inc", p.otros, "Otros ingresos")}
+        ${filaVal("inc", p, "ingreso", "Otros ingresos", o, "Otros ingresos")}
         ${fila("inc total", p.ingresos, "Total ingresos del mes")}
         ${exp}
         ${fila("exp total", p.gastos, `Total gastos del mes (${pct(p.gastos, p.ingresos)})`)}
@@ -934,18 +965,37 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
     selApto.innerHTML = ctx.aptos.length ? opcionesApto(ctx, aptoSel) : `<option value="">Importa el CSV primero</option>`;
     const L = mesLabel(S.mes);
 
-    // Administración del mes
-    $("#adm-title").textContent = `Administración de ${L.toLowerCase()}`;
-    $("#adm-list").innerHTML = ctx.aptos.length ? `<div class="list-wrap"><table class="list adm-table">
-      <thead><tr><th>Apto</th><th>Edificio</th><th class="num">Valor</th><th></th></tr></thead>
-      <tbody>${ctx.aptos.map(a => {
-        const ad = adminDe(S.mes, a), e = ctx.edOf[a];
-        const explicito = S.admin[S.mes] && S.admin[S.mes][a] !== undefined && S.admin[S.mes][a] !== null;
-        const nota = ad.desde === null ? "Sin valor todavía" : ad.heredado ? `Igual que ${mesLabel(ad.desde).toLowerCase()}` : "";
-        return `<tr><td><b>${esc(a)}</b></td><td><span class="chip ed-${esc(e.color)}"><span class="dot"></span>${esc(e.nombre)}</span></td>
-          <td class="num">${admin ? `<input class="adm-inp${explicito ? "" : " hered"}" id="admg-${slug(a)}-${S.mes}" data-adm="${esc(a)}" data-mes="${S.mes}" type="text" inputmode="numeric" autocomplete="off" aria-label="Administración del ${esc(a)}" value="${ad.desde !== null ? money(ad.valor) : ""}" placeholder="$ 0">` : money(ad.valor)}</td>
-          <td class="muted" style="font-size:.82rem">${esc(nota)}</td></tr>`;
-      }).join("")}</tbody></table></div>` : `<p class="muted" style="margin:0">Aparecen los apartamentos al importar el CSV.</p>`;
+    // Valores del mes: una fila por apartamento, editable como en el Excel
+    $("#adm-title").textContent = `Valores de ${L.toLowerCase()}`;
+    $("#adm-ayuda").textContent = admin ? "Toca un valor para cambiarlo. La administración en gris se repite del mes anterior." : "Valores registrados por el administrador.";
+    if (!ctx.aptos.length) { $("#adm-list").innerHTML = `<p class="muted" style="margin:0">Aparecen los apartamentos al importar el CSV.</p>`; }
+    else {
+      const { per, dias } = calc(S.mes, ctx);
+      const cols = [["servicios", "Servicios"], ["administracion", "Administración"], ["adecuaciones", "Adecuaciones"], ["operacion", "Operación"], ["otros", "Otros gastos"], ["ingreso", "Otros ingresos"]];
+      const celda = (a, cat, nombre) => {
+        const p = per[a];
+        if (cat === "administracion") {
+          const ad = p.adm || adminDe(S.mes, a);
+          const explicito = S.admin[S.mes] && S.admin[S.mes][a] !== undefined && S.admin[S.mes][a] !== null;
+          const nota = ad.desde === null ? "Sin valor todavía" : ad.heredado ? `Igual que ${mesLabel(ad.desde).toLowerCase()}` : "";
+          return admin ? `<input class="adm-inp${explicito ? "" : " hered"}" id="admg-${slug(a)}-${S.mes}" data-adm="${esc(a)}" data-mes="${S.mes}" type="text" inputmode="numeric" autocomplete="off" aria-label="Administración del ${esc(a)}" title="${esc(nota)}" value="${ad.desde !== null ? money(ad.valor) : ""}" placeholder="$ 0">` : money(ad.valor);
+        }
+        const v = cat === "ingreso" ? p.otros : (p.g[cat] || 0);
+        return admin ? inputValor("valg", a, S.mes, cat, v, nombre) : money(v);
+      };
+      const T = sumar(ctx.aptos.map(a => per[a]), dias);
+      $("#adm-list").innerHTML = `<div class="list-wrap"><table class="list grid-mes">
+        <thead><tr><th>Apto</th><th class="num">Ingresos Airbnb</th>${cols.map(([, n]) => `<th class="num">${n}</th>`).join("")}<th class="num">Balance</th></tr></thead>
+        <tbody>${ctx.aptos.map(a => {
+          const p = per[a], e = ctx.edOf[a];
+          return `<tr><td><span class="chip ed-${esc(e.color)}"><span class="dot"></span>${esc(a)}</span></td>
+            <td class="num">${money(p.neto + p.ajustes)}</td>
+            ${cols.map(([c, n]) => `<td class="num">${celda(a, c, n)}</td>`).join("")}
+            <td class="num"><b class="${p.balance < 0 ? "neg" : "pos"}">${money(p.balance)}</b></td></tr>`;
+        }).join("")}</tbody>
+        <tfoot><tr><td>Total</td><td class="num">${money(T.neto + T.ajustes)}</td>${cols.map(([c]) => `<td class="num">${money(c === "ingreso" ? T.otros : T.g[c])}</td>`).join("")}<td class="num ${T.balance < 0 ? "neg" : "pos"}">${money(T.balance)}</td></tr></tfoot>
+      </table></div>`;
+    }
 
     // Registros manuales
     $("#g-title").textContent = `Registros de ${L.toLowerCase()}`;
@@ -987,6 +1037,28 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
         else await Store.set("administracion", mes, { valores: { [apto]: n }, actualizado: new Date().toISOString(), por: S.user.uid }, true);
       }
     } catch (e) { S.error = errTexto(e); }
+    if (S.diferido) { S.diferido = false; render(); }
+  }
+
+  async function guardarValor(inp) {
+    const apto = inp.dataset.val, mes = inp.dataset.mes, cat = inp.dataset.cat, txt = inp.value.trim();
+    const ctx = mkCtx(), id = hojaId(mes, apto, cat);
+    const existente = S.gastos.find(g => g.id === id);
+    const otros = aportes(mes, apto, cat, ctx, id);
+    const actual = otros + (existente ? existente.monto || 0 : 0);
+    const objetivo = txt ? leerPesos(txt) : otros;
+    inp.value = Math.abs(objetivo) < 0.5 ? "" : money(objetivo);
+    if (Math.abs(objetivo - actual) >= 0.5) {
+      const monto = objetivo - otros;
+      try {
+        if (Math.abs(monto) < 0.5) { if (existente) await Store.del("gastos", id); }
+        else await Store.set("gastos", id, {
+          mes, apto, clase: cat === "ingreso" ? "ingreso" : "gasto", categoria: cat,
+          descripcion: Math.abs(otros) >= 0.5 ? "Ajuste puesto en la hoja" : "Valor puesto en la hoja",
+          monto, hoja: true, creado: existente?.creado || new Date().toISOString(), actualizado: new Date().toISOString(), por: S.user.uid
+        });
+      } catch (e) { S.error = errTexto(e); }
+    }
     if (S.diferido) { S.diferido = false; render(); }
   }
 
@@ -1060,38 +1132,66 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
     if (!window.Papa) { S.pending = { error: "No se pudo cargar el lector de CSV. Revisa la conexión y recarga la página." }; render(); return; }
     Papa.parse(file, {
       header: true, skipEmptyLines: true, transformHeader: h => String(h).replace(/^﻿/, "").trim(),
-      complete: res => { S.pending = armarImport(res.data, res.meta.fields, file.name); render(); },
+      complete: res => {
+        const P = armarImport(res.data, res.meta.fields, file.name);
+        if (P.error) { S.pending = P; render(); return; }
+        S.pending = P; confirmarImport();
+      },
       error: () => { S.pending = { error: "No se pudo leer el archivo. Asegúrate de que sea el CSV descargado de Airbnb." }; render(); }
     });
   }
+  // Apartamentos que ya se sabe a qué edificio pertenecen. Al importar se asignan solos.
+  const EDIFICIOS_CONOCIDOS = [
+    { clave: "caridi", nombre: "Caridi", color: "naranja", aptos: ["4", "4B", "5", "5B", "6"] },
+    { clave: "blue", nombre: "Blue", color: "azul", aptos: ["802"] }
+  ];
+  function asignarConocidos(aptosCsv) {
+    const cfg = clone(S.config && S.config.edificios ? S.config : { edificios: [] });
+    const asignado = new Set(cfg.edificios.flatMap(e => e.aptos || []));
+    let cambio = false;
+    for (const k of EDIFICIOS_CONOCIDOS) {
+      const faltan = aptosCsv.filter(a => k.aptos.includes(a) && !asignado.has(a));
+      if (!faltan.length) continue;
+      let ed = cfg.edificios.find(e => norm(e.nombre).includes(k.clave));
+      if (!ed) { ed = { id: k.clave, nombre: k.nombre, color: k.color, aptos: [] }; cfg.edificios.push(ed); }
+      ed.aptos = [...new Set([...(ed.aptos || []), ...faltan])].sort(natSort);
+      faltan.forEach(a => asignado.add(a)); cambio = true;
+    }
+    return cambio ? cfg : null;
+  }
   async function confirmarImport() {
-    const P = S.pending; if (!P || !P.nuevos?.length || S.importing) return;
-    S.importing = true; S.impMsg = `Guardando ${P.nuevos.length} movimientos…`; S.impMsgCls = ""; render();
+    const P = S.pending; if (!P || S.importing) return;
+    S.importing = true; S.impMsg = P.nuevos.length ? `Guardando ${P.nuevos.length} movimientos…` : "Revisando el archivo…"; S.impMsgCls = ""; render();
     try {
-      await Store.setMany("movs", P.nuevos.map(({ id, ...data }) => ({ id, data: { ...data, importado: new Date().toISOString() } })));
+      if (P.nuevos.length) await Store.setMany("movs", P.nuevos.map(({ id, ...data }) => ({ id, data: { ...data, importado: new Date().toISOString() } })));
+      if (S.got.config) {
+        const cfg = asignarConocidos([...new Set(P.movs.map(m => m.apto))]);
+        if (cfg) { await Store.set("config", "edificios", cfg); S.config = cfg; S.cfgDraft = null; S.cfgDirty = false; }
+      }
     } catch (e) { S.importing = false; S.impMsg = errTexto(e); S.impMsgCls = "err"; render(); return; }
     S.importing = false;
+    const asignados = new Set((S.config?.edificios || []).flatMap(e => e.aptos || []));
+    const sinEdificio = [...new Set(P.movs.map(m => m.apto))].filter(a => !asignados.has(a)).sort(natSort);
     const ultimo = P.meses[P.meses.length - 1];
-    S.pending = null; S.impMsg = `Listo: ${P.nuevos.length} movimientos importados.`; S.impMsgCls = "ok";
-    $("#imp-file").value = "";
+    const meses = P.meses.map(m => mesLabel(m).toLowerCase()).join(", ");
+    S.pending = null; S.impMsg = ""; $("#imp-file").value = "";
     if (ultimo) { S.mes = ultimo; S.mesElegido = true; }
-    location.hash = P.aptosNuevos.length ? "#edificios" : "#resumen";
+    if (sinEdificio.length) {
+      avisar(`${P.nuevos.length ? `Se guardaron ${P.nuevos.length} movimientos de ${meses}.` : "Ese archivo ya estaba cargado."} Falta decir a qué edificio pertenece${sinEdificio.length === 1 ? " el apartamento" : "n los apartamentos"} ${listaY(sinEdificio)}: elígelo abajo y toca Guardar cambios.`);
+      location.hash = "#edificios";
+    } else {
+      avisar(P.nuevos.length ? `Listo: se guardaron ${P.nuevos.length} movimientos de ${meses} (${P.reservas} reservas${P.otros ? `, ${P.otros} ajustes` : ""}).` : `Ese archivo ya estaba cargado: los ${P.movs.length} movimientos de ${meses} ya estaban en la app.`);
+      location.hash = "#resumen";
+    }
     render();
   }
+  let avisoTimer = null;
+  function avisar(t) { S.aviso = t; clearTimeout(avisoTimer); avisoTimer = setTimeout(() => { S.aviso = ""; render(); }, 15000); }
   function vImportar() {
     const P = S.pending; let html = "";
     if (S.impMsg) html += `<p class="msg ${S.impMsgCls}">${esc(S.impMsg)}</p>`;
     if (P && P.error) html += `<p class="notice">${esc(P.error)}</p>`;
-    else if (P) html += `<div class="pv-grid">
-        <div><b>${P.reservas}</b><span>Reservas</span></div><div><b>${P.otros}</b><span>Ajustes y reembolsos</span></div>
-        <div><b>${P.nuevos.length}</b><span>Nuevos por guardar</span></div><div><b>${P.repetidos}</b><span>Ya estaban cargados</span></div>
-      </div>
-      <p class="muted" style="margin:0">${esc(P.nombre)} · ${P.meses.map(mesLabel).join(", ") || "sin meses"} · ${P.pagos} pagos al banco omitidos${P.sinFecha ? ` · ${P.sinFecha} filas sin fecha omitidas` : ""}</p>
-      ${P.aptosNuevos.length ? `<p class="notice">Apartamentos que todavía no tienen edificio: <b>${esc(listaY(P.aptosNuevos))}</b>. Después de importar te llevo a Edificios para asignarlos.</p>` : ""}
-      <div class="form-actions" style="margin-top:0">
-        <button class="btn primary" type="button" data-act="importar" ${!P.nuevos.length || S.importing ? "disabled" : ""}>${P.nuevos.length ? `Importar ${P.nuevos.length} movimientos` : "No hay nada nuevo"}</button>
-        <button class="btn" type="button" data-act="imp-cancelar" ${S.importing ? "disabled" : ""}>Cancelar</button>
-      </div>`;
+    else if (S.importing) html += `<p class="msg">Guardando…</p>`;
     $("#imp-preview").innerHTML = html;
     const porMes = {};
     S.movs.forEach(m => { const x = porMes[m.mes] || (porMes[m.mes] = { r: 0, o: 0 }); m.tipo === "reserva" ? x.r++ : x.o++; });
@@ -1132,7 +1232,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
         <div class="form-actions"><button class="btn" type="button" data-act="ed-agregar">Agregar edificio</button></div>
       </section>
       <section class="card">
-        <div class="card-head"><h2>Apartamentos</h2><p>Se detectan del nombre del anuncio en Airbnb</p></div>
+        <div class="card-head"><h2>Apartamentos</h2><p>Elige el edificio de cada uno y toca <b>Guardar cambios</b></p></div>
         ${aptos.length ? `<div class="list-wrap"><table class="list">
           <thead><tr><th>Apto</th><th>Anuncio en Airbnb</th><th>Edificio</th></tr></thead>
           <tbody>${aptos.map(a => `<tr><td><b>${esc(a)}</b></td><td class="muted" style="max-width:340px">${esc(ctx.anuncio[a] || "—")}</td>
@@ -1180,13 +1280,15 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
   function render() {
     if ($("#scr-app").hidden) return;
     const a = document.activeElement;
-    if (a && a.matches && a.matches(".adm-inp, .ed-inp")) { S.diferido = true; return; }
+    if (a && a.matches && a.matches(".adm-inp, .val-inp, .ed-inp")) { S.diferido = true; return; }
     if (!S.mes) S.mes = mesActual();
     const admin = esAdmin();
     if (!admin && ["importar", "edificios"].includes(S.view)) S.view = "resumen";
     const ctx = mkCtx();
     renderMeses();
-    $("#status").textContent = S.demo ? "Modo de prueba: la app no está conectada a Firebase y nada de lo que hagas se guarda." : S.error;
+    const st = $("#status");
+    st.textContent = S.error || S.aviso || (S.demo ? "Modo de prueba: la app no está conectada a Firebase y nada de lo que hagas se guarda." : "");
+    st.classList.toggle("ok", !S.error && !!S.aviso);
     $("#who-nombre").textContent = S.perfil?.nombre || S.perfil?.usuario || "";
     $("#who-rol").textContent = "· " + (ROLES[S.perfil?.rol] || "");
     document.querySelectorAll("[data-solo-admin]").forEach(t => { t.hidden = !admin; });
@@ -1206,7 +1308,19 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
   /* ---------- sesión y datos ---------- */
   let subsPerfil = [], subsDatos = [];
   const parar = arr => { arr.forEach(f => { try { f(); } catch (_) {} }); arr.length = 0; };
-  function errDatos(e) { S.error = errTexto(e); render(); }
+  // Si una lectura se rechaza justo después de crear o activar el perfil, se vuelve a intentar sola.
+  let reintentos = 0, reintentando = false;
+  function errDatos(e) {
+    const denegado = /permission-denied/.test((e && e.code) || "");
+    if (denegado && S.perfil && ["admin", "consulta"].includes(S.perfil.rol) && reintentos < 3) {
+      if (reintentando) return;
+      reintentando = true; reintentos++;
+      parar(subsDatos); if (subUsuarios) { subUsuarios(); subUsuarios = null; }
+      setTimeout(() => { reintentando = false; iniciarDatos(); escucharUsuarios(); }, 1200 * reintentos);
+      return;
+    }
+    S.error = errTexto(e); render();
+  }
   function iniciarDatos() {
     if (subsDatos.length) return;
     subsDatos.push(Store.listenCol("movs", list => { S.movs = list; S.got.movs = true; elegirMesInicial(); render(); }, errDatos));
@@ -1216,7 +1330,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
   }
   let subUsuarios = null;
   function escucharUsuarios() {
-    if (esAdmin() && !subUsuarios) subUsuarios = Store.listenCol("usuarios", list => { S.usuarios = list; render(); }, () => {});
+    if (esAdmin() && !subUsuarios) subUsuarios = Store.listenCol("usuarios", list => { S.usuarios = list; render(); }, errDatos);
     if (!esAdmin() && subUsuarios) { subUsuarios(); subUsuarios = null; S.usuarios = []; }
   }
   async function mostrarLogin() {
@@ -1229,16 +1343,19 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
   }
   Auth.onChange(user => {
     parar(subsPerfil); parar(subsDatos); if (subUsuarios) { subUsuarios(); subUsuarios = null; }
+    reintentos = 0; reintentando = false;
     Object.assign(S, { user, perfil: null, movs: [], gastos: [], admin: {}, config: null, usuarios: [], error: "", got: { movs: false, gastos: false, admin: false, config: false }, mesElegido: false, mes: mesActual(), pending: null, impMsg: "" });
     if (!user) { mostrarLogin(); return; }
     pantalla("carga");
-    subsPerfil.push(Store.listenDoc("usuarios", user.uid, perfil => {
+    subsPerfil.push(Store.listenDoc("usuarios", user.uid, (perfil, md) => {
+      // Espera a que el servidor confirme el perfil antes de pedir los datos.
+      if (perfil && md && md.hasPendingWrites) { if ($("#scr-app").hidden) pantalla("carga"); return; }
       S.perfil = perfil;
       if (!perfil && S.creando) { pantalla("carga"); return; }
       if (!perfil || !["admin", "consulta"].includes(perfil.rol)) { parar(subsDatos); mostrarSinAcceso(); return; }
       iniciarDatos(); escucharUsuarios();
       pantalla("app"); route();
-    }, () => { pantalla("sin-acceso"); }));
+    }, () => { pantalla("sin-acceso"); }, true));
   });
 
   /* ---------- eventos ---------- */
@@ -1347,16 +1464,17 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
   });
   document.addEventListener("focusin", e => {
     const t = e.target;
-    if (!t.matches(".adm-inp")) return;
+    if (!t.matches(".adm-inp, .val-inp")) return;
     t.select();
     t.addEventListener("mouseup", ev => ev.preventDefault(), { once: true }); // que el clic no quite la selección
   });
   document.addEventListener("focusout", e => {
     const t = e.target;
     if (t.matches(".adm-inp")) guardarAdmin(t);
+    else if (t.matches(".val-inp")) guardarValor(t);
     else if (t.matches(".ed-inp") && S.diferido) { S.diferido = false; setTimeout(render, 0); }
   });
-  document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches(".adm-inp")) { e.preventDefault(); e.target.blur(); } });
+  document.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches(".adm-inp, .val-inp")) { e.preventDefault(); e.target.blur(); } });
   document.addEventListener("change", e => {
     const t = e.target;
     if (t.dataset.edColor !== undefined) { S.cfgDraft.edificios[+t.dataset.edColor].color = t.value; S.cfgDirty = true; S.cfgMsg = ""; render(); }
