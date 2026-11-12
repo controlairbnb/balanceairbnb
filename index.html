@@ -127,7 +127,7 @@ main{padding-block:20px 56px}
 .stack{display:grid;gap:20px;min-width:0}
 
 /* Hoja contable (formato del Excel) */
-.sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;--ed:var(--accent);--ed-soft:var(--accent-soft);break-inside:avoid}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;break-inside:avoid}
 .sheet-head{background:var(--ed);color:var(--on-ed);font-size:.92rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:9px 16px;text-align:center}
 .anuncio{margin:0;padding:6px 16px 0;font-size:.76rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpis{list-style:none;margin:0;padding:8px 16px 10px;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:.8rem;color:var(--muted);border-bottom:1px solid var(--line);background:var(--ed-soft)}
@@ -284,7 +284,72 @@ main{padding-block:20px 56px}
   main{padding:0}
   .card,.sheet{border-color:#BBB}
   .adm-inp,.val-inp{border:0;padding:0;background:none}
+
+  /* Informe para imprimir / PDF */
+  @page{margin:10mm}
+  body.imprimiendo{padding:0;background:#fff}
+  body.imprimiendo #scr-app,body.imprimiendo .auth{display:none!important}
+  body.imprimiendo #reporte{display:block}
+  .reporte{font-size:8.5pt;line-height:1.35;color:#111}
+  .rp-page{break-after:page}
+  .rp-page:last-child{break-after:auto}
+  .rp-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:2px solid var(--accent);padding-bottom:6px;margin-bottom:9px}
+  .rp-head h1{font-size:15pt;letter-spacing:-.01em}
+  .rp-head p{margin:2px 0 0;color:#444;font-size:9pt}
+  .rp-meta{text-align:right;font-size:7.5pt;color:#555;white-space:nowrap}
+  .rp-h2{font-size:10.5pt;margin:12px 0 5px}
+  .rp-kpis{display:grid;grid-template-columns:repeat(6,1fr);border:1px solid #BBB;border-radius:6px;overflow:hidden;margin-bottom:10px}
+  .rp-kpis div{padding:5px 8px;border-left:1px solid #DDD}
+  .rp-kpis div:first-child{border-left:0}
+  .rp-kpis b{display:block;font-family:var(--font-head);font-size:10.5pt;font-variant-numeric:tabular-nums}
+  .rp-kpis span{font-size:7pt;color:#555}
+  .rp-two{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;align-items:start}
+  .rp-box{border:1px solid #BBB;border-radius:6px;padding:8px 10px}
+  .rp-box h3{font-size:9.5pt;margin-bottom:4px}
+  .rp-transfer{width:100%;border-collapse:collapse}
+  .rp-transfer td{padding:4px 6px;border-bottom:1px solid #DDD;font-weight:700}
+  .rp-transfer tr.edrow td{background:var(--ed-soft)}
+  .rp-transfer td:first-child{text-transform:uppercase;letter-spacing:.03em;border-left:3px solid var(--ed,transparent)}
+  .rp-transfer td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--pos)}
+  .rp-transfer td.num.neg{color:var(--neg)}
+  .rp-transfer tr.tot td{border-bottom:0;border-top:2px solid #333;font-size:10pt}
+  .rp-nota{font-size:7pt;color:#555;margin:6px 0 0}
+  .rp-tbl{width:100%;border-collapse:collapse;font-size:7.4pt}
+  .rp-tbl th{font-size:6.6pt;text-transform:uppercase;letter-spacing:.03em;color:#444;text-align:right;padding:3px 4px;border-bottom:1.5px solid #333;white-space:nowrap}
+  .rp-tbl td{padding:2.5px 4px;border-bottom:1px solid #E2E2E2;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rp-tbl th.t,.rp-tbl td.t{text-align:left}
+  .rp-tbl td.t.wrap{white-space:normal}
+  .rp-tbl td.neg{color:var(--neg)}
+  .rp-tbl td.pos{color:var(--pos)}
+  .rp-tbl tr.ed td{background:var(--ed-soft);font-weight:700;text-align:left;border-left:3px solid var(--ed);padding-top:4px}
+  .rp-tbl tr.sub td{font-weight:700;border-top:1px solid #888;border-bottom:1px solid #888}
+  .rp-tbl tr.tot td{font-weight:700;font-size:8pt;border-top:2px solid #333;border-bottom:0}
+  .rp-tbl tr{break-inside:avoid}
+  .rp-sheets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;align-items:start}
+  .reporte .sheet{border-radius:6px;border-color:#BBB}
+  .reporte .sheet-head{font-size:8pt;padding:4px 6px;letter-spacing:.03em}
+  .reporte .anuncio{display:none}
+  .reporte .kpis{padding:3px 8px 4px;font-size:6.8pt;gap:1px 8px}
+  .reporte .rows{padding:5px 8px 7px}
+  .reporte .r{grid-template-columns:44% 1fr;gap:6px;padding:.5px 0;align-items:baseline}
+  .reporte .r .v{font-size:8pt}
+  .reporte .r .l{font-size:6.6pt;letter-spacing:.01em;line-height:1.25}
+  .reporte .r .l small{font-size:6.2pt}
+  .reporte .r.gap{margin-top:5px}
+  .reporte .r.total{margin-top:2px;padding-top:3px}
+  .reporte .r.total .v{font-size:8.8pt}
+  .reporte .r.bal{margin-top:5px;padding-block:3px}
+  .reporte .r.bal .v{font-size:10.5pt}
+  .reporte .r.bal .l{font-size:7pt}
+  .rp-two .sheet .r{grid-template-columns:38% 1fr}
+  .rp-two .sheet .r .v{font-size:9pt}
+  .rp-two .sheet .r .l{font-size:7.4pt}
+  .rp-two .sheet .r.bal .v{font-size:12pt}
+  .rp-pie{margin-top:8px;font-size:7pt;color:#666}
 }
+#reporte{display:none}
+.chk{display:inline-flex;align-items:center;gap:6px;font-size:.84rem;color:var(--muted);cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -448,6 +513,8 @@ main{padding-block:20px 56px}
     </section>
   </main>
 </div>
+
+<div id="reporte" class="reporte" aria-hidden="true"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -830,7 +897,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
     if (sinGastos.length) avisos.push(`<p class="notice">Sin gastos registrados en ${esc(L.toLowerCase())}: ${sinGastos.length === 1 ? "apartamento" : "apartamentos"} ${esc(listaY(sinGastos))}.${esAdmin() ? ` <a href="#gastos">Registrar gastos</a>` : ""}</p>`);
 
     el.innerHTML = `
-      <div class="toolbar"><button class="btn small" type="button" data-act="imprimir">Imprimir o guardar PDF</button></div>
+      <div class="toolbar"><label class="chk"><input type="checkbox" id="rp-reservas"${S.rpReservas ? " checked" : ""}> Incluir lista de reservas</label><button class="btn small" type="button" data-act="imprimir">Imprimir o guardar PDF</button></div>
       <section class="card hero">
         <div>
           <p class="eyebrow">Ingresos de ${esc(L.toLowerCase())}</p>
@@ -903,6 +970,96 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
     return `<section class="card chart"><div class="card-head"><h2>Ingresos por mes</h2><p>Últimos ${vals.length} meses cargados</p></div>
       <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Ingresos totales por mes"><line x1="${side}" x2="${W - side}" y1="${H - bottom}" y2="${H - bottom}" stroke="var(--line)"></line>${bars}</svg></section>`;
   }
+  /* ---------- informe para imprimir o guardar en PDF ---------- */
+  function armarReporte() {
+    const ctx = mkCtx();
+    const { per, dias } = calc(S.mes, ctx);
+    const T = sumar(ctx.aptos.map(a => per[a]), dias);
+    const eds = ctx.eds.filter(e => e.aptos.length).map(e => ({ e, t: sumar(e.aptos.map(a => per[a]), dias) }));
+    const L = mesLabel(S.mes);
+    const ahora = new Date().toLocaleString("es-CO", { dateStyle: "long", timeStyle: "short" });
+    const quien = S.perfil?.nombre || S.perfil?.usuario || "";
+    const cab = (sub) => `<header class="rp-head"><div><h1>Balance Caridi &amp; Blue · ${esc(L)}</h1><p>${sub}</p></div><div class="rp-meta">Generado el ${esc(ahora)}${quien ? `<br>Por: ${esc(quien)}` : ""}</div></header>`;
+    const mc = (v, cls = "") => `<td class="${cls}${Math.round(v) === 0 ? " muted" : ""}">${money(v)}</td>`;
+    const filaTabla = (nombre, p, clsTr = "") => `<tr class="${clsTr}"><td class="t">${nombre}</td><td>${p.reservas}</td><td>${p.nochesMes}</td><td>${pctInt(p.ocup)}</td>${mc(p.ingresos)}${mc(p.g.servicios)}${mc(p.g.administracion)}${mc(p.g.adecuaciones)}${mc(p.g.operacion)}${mc(p.g.otros)}${mc(p.gastos, "neg")}<td class="${p.balance < 0 ? "neg" : "pos"}">${money(p.balance)}</td><td>${pct(p.balance, p.ingresos)}</td></tr>`;
+
+    let html = `<section class="rp-page">
+      ${cab("Informe mensual de apartamentos en Airbnb · Barranquilla")}
+      <div class="rp-kpis">
+        <div><b>${T.reservas}</b><span>Reservas pagadas</span></div>
+        <div><b>${T.nochesMes}</b><span>Noches ocupadas</span></div>
+        <div><b>${pctInt(T.ocup)}</b><span>Ocupación promedio</span></div>
+        <div><b>${money(T.tarifa)}</b><span>Tarifa por noche</span></div>
+        <div><b>${money(T.bruto)}</b><span>Ingresos brutos</span></div>
+        <div><b>${money(T.comision)}</b><span>Comisión Airbnb</span></div>
+      </div>
+      <div class="rp-two">
+        ${hoja(T, { titulo: `Balance general - ${mesExcel(S.mes)}`, color: "accent", kpis: false })}
+        <div class="rp-box">
+          <h3>Transferencia</h3>
+          <table class="rp-transfer">
+            ${eds.map(({ e, t }) => `<tr class="edrow ed-${esc(e.color)}"><td>${esc(e.nombre)}</td><td class="num${t.balance < 0 ? " neg" : ""}">${money(t.balance)}</td></tr>`).join("")}
+            <tr class="tot"><td>Total</td><td class="num${T.balance < 0 ? " neg" : ""}">${money(T.balance)}</td></tr>
+          </table>
+          <p class="rp-nota">Ingresos por reservas: lo que Airbnb pagó en el mes después de su comisión (informe de ingresos de Airbnb). Ajustes: reembolsos y correcciones de Airbnb. Ocupación: noches ocupadas dentro del mes sobre los ${dias} días del mes.</p>
+        </div>
+      </div>
+      <h2 class="rp-h2">Detalle por apartamento</h2>
+      <table class="rp-tbl">
+        <thead><tr><th class="t">Apto</th><th>Reservas</th><th>Noches</th><th>Ocup.</th><th>Ingresos</th><th>Servicios</th><th>Administr.</th><th>Adecuac.</th><th>Operación</th><th>Otros</th><th>Total gastos</th><th>Balance</th><th>%</th></tr></thead>
+        <tbody>
+          ${eds.map(({ e, t }) => `<tr class="ed ed-${esc(e.color)}"><td class="t" colspan="13">${esc(e.nombre)}</td></tr>
+            ${e.aptos.map(a => filaTabla(esc(a), per[a])).join("")}
+            ${e.aptos.length > 1 ? filaTabla(`Total ${esc(e.nombre)}`, t, "sub") : ""}`).join("")}
+          ${filaTabla("Total general", T, "tot")}
+        </tbody>
+      </table>
+    </section>
+    <section class="rp-page">
+      ${cab("Hoja de cada apartamento")}
+      <div class="rp-sheets">
+        ${ctx.aptos.map(a => { const e = ctx.edOf[a]; return hoja(per[a], { titulo: `${a} - ${e.nombre} - ${mesExcel(S.mes)}`, color: e.color, apto: a, mes: S.mes }); }).join("")}
+      </div>
+    </section>`;
+
+    if (S.rpReservas) {
+      const filas = ctx.aptos.map(a => {
+        const p = per[a], e = ctx.edOf[a];
+        const res = [...p.list].sort((x, y) => (x.inicio || "").localeCompare(y.inicio || ""));
+        if (!res.length && !p.ajList.length) return "";
+        return `<tr class="ed ed-${esc(e.color)}"><td class="t" colspan="7">${esc(a)} · ${esc(e.nombre)}</td></tr>
+          ${res.map(m => `<tr><td class="t">${fechaCorta(m.fecha)}</td><td class="t wrap">${esc(m.huesped)}</td><td class="t">${fechaCorta(m.inicio)} → ${fechaCorta(m.fin)}</td><td>${m.noches || 0}</td><td>${money(brutoDe(m))}</td><td>${money(brutoDe(m) - (m.monto || 0))}</td><td>${money(m.monto)}</td></tr>`).join("")}
+          ${p.ajList.map(m => `<tr><td class="t">${fechaCorta(m.fecha)}</td><td class="t wrap" colspan="5">${esc(m.tipoTxt)}${m.huesped ? " · " + esc(m.huesped) : ""}</td><td class="${m.monto < 0 ? "neg" : ""}">${money(m.monto)}</td></tr>`).join("")}
+          <tr class="sub"><td class="t" colspan="3">Total ${esc(a)}</td><td>${p.noches}</td><td>${money(p.bruto)}</td><td>${money(p.comision)}</td><td>${money(p.neto + p.ajustes)}</td></tr>`;
+      }).join("");
+      const detallados = S.gastos.filter(g => g.mes === S.mes && !g.hoja).sort((x, y) => natSort(nombreDestino(x, ctx), nombreDestino(y, ctx)));
+      html += `<section class="rp-page">
+        ${cab("Anexo: reservas y movimientos pagados por Airbnb")}
+        <table class="rp-tbl">
+          <thead><tr><th class="t">Pago</th><th class="t">Huésped</th><th class="t">Estadía</th><th>Noches</th><th>Bruto</th><th>Comisión</th><th>Neto</th></tr></thead>
+          <tbody>${filas}
+            <tr class="tot"><td class="t" colspan="3">Total del mes</td><td>${T.noches}</td><td>${money(T.bruto)}</td><td>${money(T.comision)}</td><td>${money(T.neto + T.ajustes)}</td></tr>
+          </tbody>
+        </table>
+        ${detallados.length ? `<h2 class="rp-h2">Gastos anotados con detalle</h2>
+        <table class="rp-tbl">
+          <thead><tr><th class="t">Apartamento</th><th class="t">Tipo</th><th class="t">Descripción</th><th>Valor</th></tr></thead>
+          <tbody>${detallados.map(g => `<tr><td class="t">${esc(nombreDestino(g, ctx))}</td><td class="t">${esc(catLabel(g))}</td><td class="t wrap">${esc(g.descripcion || "—")}</td><td class="${g.clase === "ingreso" ? "pos" : "neg"}">${money(g.monto)}</td></tr>`).join("")}</tbody>
+        </table>` : ""}
+        <p class="rp-pie">La fecha de pago es el día en que Airbnb pagó la reserva; así se asigna cada reserva al mes del informe.</p>
+      </section>`;
+    }
+    $("#reporte").innerHTML = html;
+  }
+  function prepararImpresion() {
+    if ($("#scr-app").hidden) return false;
+    armarReporte();
+    document.body.classList.add("imprimiendo");
+    return true;
+  }
+  addEventListener("beforeprint", () => { if (!document.body.classList.contains("imprimiendo")) prepararImpresion(); });
+  addEventListener("afterprint", () => { document.body.classList.remove("imprimiendo"); });
+
   function textoResumen(ctx) {
     const { per, dias } = calc(S.mes, ctx);
     const T = sumar(ctx.aptos.map(a => per[a]), dias);
@@ -1435,7 +1592,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
     const b = e.target.closest("[data-act]"); if (!b) return;
     const act = b.dataset.act;
     if (act === "salir") Auth.logout();
-    else if (act === "imprimir") window.print();
+    else if (act === "imprimir") { if (prepararImpresion()) window.print(); }
     else if (act === "copiar") {
       const txt = textoResumen(mkCtx()), msg = $("#copy-msg"), fb = $("#copy-fallback");
       const mostrar = () => { fb.innerHTML = `<textarea class="copy-box" id="copy-box" readonly aria-label="Resumen para copiar"></textarea>`; const ta = $("#copy-box"); ta.value = txt; ta.focus(); ta.select(); msg.textContent = "Selecciona el texto y cópialo."; };
@@ -1488,6 +1645,7 @@ const DOMINIO_USUARIOS = "balance-apartamentos.app";
       Store.set("usuarios", t.dataset.rolUid, { rol: t.value }, true).catch(err => { S.error = errTexto(err); render(); });
     }
     else if (t.id === "g-mes") t.dataset.touched = "1";
+    else if (t.id === "rp-reservas") S.rpReservas = t.checked;
     else if (t.id === "imp-file") leerArchivo(t.files && t.files[0]);
   });
 
